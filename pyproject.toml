@@ -1,0 +1,30 @@
+[project]
+dependencies = [
+    "rsa~=4.7",
+    "askfm-api~=0.1",
+]
+dev-dependencies = [
+    "black~=20.8b1",
+    "isort~=5.7",
+    # "-e /mnt/data/wkspace/askfm-api",
+]
+requires-python = ">=3.9"
+license = {text = "MIT"}
+
+[project.urls]
+homepage = "https://github.com/AskfmForHumans/afh-bot"
+
+[tool.pdm.scripts]
+_.env_file = ".env"
+start = "python -m askfmforhumans"
+format.shell = """
+    echo isort\
+    && isort --profile black --fss --skip-gitignore .\
+    && echo black\
+    && black .
+    """
+# deploy = ""
+
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
