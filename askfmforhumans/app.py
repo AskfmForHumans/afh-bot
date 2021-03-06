@@ -8,6 +8,7 @@ import rsa
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.bot import Bot
+from askfmforhumans.simple_bot import SimpleBot
 from askfmforhumans.errors import AppError, CryptoError
 
 MAIN_LOOP_SLEEP_SEC = 30
@@ -33,7 +34,6 @@ LETTERS = "abcdefghijklmnopqrstuvwxyzΐάέήίΰαβγδεζηθικλμνξο�
 class App:
     def __init__(self):
         self.cfg = {}
-        self.users = {}
         self.safe_mode = False
         self.test_users_mode = False
         self.setting_regex = None
@@ -81,7 +81,8 @@ class App:
         assert len(LETTERS) == 256
 
     def run(self):
-        self.bot = Bot(self)
+        self.bot = SimpleBot(self) if self.cfg["bot_type"] == "simple" else Bot(self)
+
         while True:
             logging.info("Main loop: starting iteration")
             start = time.time()
@@ -96,12 +97,12 @@ class App:
             logging.info("Main loop: finished iteration in {:.2f}s".format(delta))
             time.sleep(MAIN_LOOP_SLEEP_SEC)
 
-    def create_bot_api(self):
+    def create_bot_api(self, *, login=True):
         token = self.cfg["access_token"]
         api = ExtendedApi(
             self.cfg["api_key"], access_token=token, safe_mode=self.safe_mode
         )
-        if token is None:
+        if token is None and login:
             api.login(self.cfg["bot_username"], self.cfg["bot_password"])
         return api
 

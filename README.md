@@ -15,12 +15,13 @@ Multifunctional bot intended to mend some of [ASKfm](https://ask.fm)'s screwups.
   - RSA-encrypted password is split into 3 parts (ASKfm's hashtag length limit is 50 characters)
 - remove all shoutouts for logged-in users
   - use the `stop` setting to disable
+- *simple* mode that requires no account for bot and only performs user-related tasks
 - special *safe* modes for testing
 
 ## Usage
 
 This code is ready to run on Heroku. Just click a button:  
-[![Deploy to Heroku button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+[![Deploy to Heroku button](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/AskfmForHumans/afh-bot/tree/production)
 
 ### Config
 
@@ -41,7 +42,6 @@ Don't know if it's because it asks users for their passwords or for other reason
 -
 
 ### Features
-- Simple "work horse" mode
 - Stats in profile description & logs (updated hourly?)
 - Status command (for user to verify their settings)
 - Cleaning modes: continuous, daily, on-demand
@@ -49,6 +49,7 @@ Don't know if it's because it asks users for their passwords or for other reason
 - Old (~1 year) question refreshing (answer and immediately delete)
 
 ### Implementation
+- Resolve [#1](https://github.com/AskfmForHumans/afh-bot/issues/1) & [#2](https://github.com/AskfmForHumans/afh-bot/issues/2)
 - Improve config validation
 - Extract logging & stats to a dedicated module (EventManager?)
 - Lazy string formatting in log messages?

@@ -11,6 +11,7 @@ class Bot:
     def __init__(self, app):
         self.app = app
         self.api = app.create_bot_api()
+        self.users = {}
 
     def tick(self):
         # Delay question processing until after updating users to avoid race condition.
@@ -27,10 +28,10 @@ class Bot:
             uname = user["uid"]
             profile = self.api.request(r.fetch_profile(uname))
 
-            if uname not in self.app.users:
+            if uname not in self.users:
                 user = self.register_user(uname, profile)
             else:
-                user = self.app.users[uname]
+                user = self.users[uname]
                 user.update_profile(profile)
 
             user.tick()
@@ -39,7 +40,7 @@ class Bot:
         logging.info(f"Registering new user {uname}")
         user = User(uname, self.app)
         user.update_profile(profile)
-        self.app.users[uname] = user
+        self.users[uname] = user
 
         # no need to greet someone who already knows about us (has some settings)
         if user.active and not user.settings:
@@ -56,7 +57,7 @@ class Bot:
     def process_questions(self, qs):
         # Never log question bodies as they may contain passwords!
         for q in qs:
-            user = self.app.users.get(q["author"] or "")
+            user = self.users.get(q["author"] or "")
             if user is not None and user.active:
                 qtype, qid = q["type"], q["qid"]
                 (cmd, *args) = q["body"].split()

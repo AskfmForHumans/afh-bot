@@ -23,6 +23,7 @@ format.shell = """
     && black .
     """
 export = "pdm export -o requirements.txt"
+pushenv = "heroku config:push -oc"
 
 [build-system]
 requires = ["pdm-pep517"]
