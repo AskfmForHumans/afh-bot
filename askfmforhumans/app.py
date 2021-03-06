@@ -16,9 +16,12 @@ DEFAULT_CONFIG = {  # ... means "required"
     "api_key": ...,
     "hashtag": ...,
     "hashtag_prefix": ...,
-    "bot_username": ...,
-    "bot_password": ...,
     "private_key": ...,
+    "public_key": ...,
+    "bot_type": "normal",  # normal/simple
+    "bot_username": None,
+    "bot_password": None,
+    "user_whitelist": None,  # comma-separated usernames
     "access_token": None,
     "test_mode": "off",  # off/safe/test-users
 }
@@ -72,9 +75,8 @@ class App:
         keydata = self.cfg["private_key"].encode("ascii")
         self.rsa_priv = rsa.PrivateKey.load_pkcs1(keydata)
 
-        with open("rsa_public_key.pem", mode="rb") as f:
-            keydata = f.read()
-            self.rsa_pub = rsa.PublicKey.load_pkcs1(keydata)
+        keydata = self.cfg["public_key"].encode("ascii")
+        self.rsa_pub = rsa.PublicKey.load_pkcs1(keydata)
 
         assert len(LETTERS) == 256
 
