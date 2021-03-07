@@ -35,13 +35,13 @@ Don't know if it's because it asks users for their passwords or for other reason
 ## Todo
 
 ### FIXME
-- Fix `fetch_new_questions()`
 - Detect failed auth, retry with backoff or give up
 
 ### Docs
 -
 
 ### Features
+- Block authors of deleted questions
 - Stats in profile description & logs (updated hourly?)
 - Status command (for user to verify their settings)
 - Cleaning modes: continuous, daily, on-demand

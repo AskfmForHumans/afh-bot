@@ -8,8 +8,8 @@ import rsa
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.bot import Bot
-from askfmforhumans.simple_bot import SimpleBot
 from askfmforhumans.errors import AppError, CryptoError
+from askfmforhumans.simple_bot import SimpleBot
 
 MAIN_LOOP_SLEEP_SEC = 30
 ENV_VAR_PREFIX = "AFH_"
@@ -94,7 +94,7 @@ class App:
                 logging.exception("Main loop:")
 
             delta = time.time() - start
-            logging.info("Main loop: finished iteration in {:.2f}s".format(delta))
+            logging.info(f"Main loop: finished iteration in {delta:.2f}s")
             time.sleep(MAIN_LOOP_SLEEP_SEC)
 
     def create_bot_api(self, *, login=True):
