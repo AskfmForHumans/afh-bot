@@ -7,7 +7,7 @@ summary = "A small Python module for determining appropriate platform-specific d
 [[package]]
 name = "askfm-api"
 sections = ["default"]
-version = "0.1.1"
+version = "0.1.2"
 summary = "Unofficial API wrapper for https://ask.fm"
 dependencies = [
     "requests~=2.25",
@@ -137,9 +137,9 @@ content_hash = "sha256:3d00a7de378e12c1b0f19021cc384e7365fe711902688cd6d14600376
     {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
     {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
 ]
-"askfm-api 0.1.1" = [
-    {file = "askfm_api-0.1.1-py3-none-any.whl", hash = "sha256:8bbb95165f836c380b9d8df9e5ce33d27e0e41f5e3bb09ccd0b83e5534e503f0"},
-    {file = "askfm-api-0.1.1.tar.gz", hash = "sha256:cb0d9c4a1450b423fe12e62799b2582b5c0887157c81dc073a259c3aa33a225f"},
+"askfm-api 0.1.2" = [
+    {file = "askfm_api-0.1.2-py3-none-any.whl", hash = "sha256:5b90fb128fcc02bb54ab02be31524174ce40a3e6427e4a22c53e53ee3f17a2f6"},
+    {file = "askfm-api-0.1.2.tar.gz", hash = "sha256:22a7321c37873fac52574e982bee6f5d2b9c9e3609c170e18b987f342c2db9b4"},
 ]
 "black 20.8b1" = [
     {file = "black-20.8b1.tar.gz", hash = "sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea"},

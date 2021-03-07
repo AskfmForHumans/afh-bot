@@ -44,8 +44,15 @@ class User:
                 qtype, qid, qtext = q["type"], q["qid"], q["body"]
                 qfrom = " from " + q["author"] if q["author"] else ""
                 # Logging shoutout bodies is ok since they aren't private by definition
-                logging.info(f"Deleting {qtype} {qid} for {self.uname}{qfrom}: {qtext}")
-                self.api.request(r.delete_question(qtype, qid))
+                logging.info(f"Got {qtype} {qid} for {self.uname}{qfrom}: {qtext}")
+
+                if "autoblock" in self.settings:
+                    logging.info(f"Deleting {qid} and blocking its author")
+                    self.api.request(r.report_question(qid, should_block=True))
+                else:
+                    logging.info(f"Deleting {qid}")
+                    self.api.request(r.delete_question(qtype, qid))
+
         self.api.request(r.mark_notifs_as_read("SHOUTOUT"))
 
     def try_read_password(self):
