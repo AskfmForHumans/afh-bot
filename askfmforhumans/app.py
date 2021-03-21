@@ -1,9 +1,11 @@
+import json
 import logging
 import os
 import re
 import time
 
 from askfm_api import AskfmApiError
+import configly
 import rsa
 
 from askfmforhumans.api import ExtendedApi
@@ -12,20 +14,6 @@ from askfmforhumans.errors import AppError, CryptoError
 from askfmforhumans.simple_bot import SimpleBot
 
 MAIN_LOOP_SLEEP_SEC = 30
-ENV_VAR_PREFIX = "AFH_"
-DEFAULT_CONFIG = {  # ... means "required"
-    "api_key": ...,
-    "hashtag": ...,
-    "hashtag_prefix": ...,
-    "private_key": ...,
-    "public_key": ...,
-    "bot_type": "normal",  # normal/simple
-    "bot_username": None,
-    "bot_password": None,
-    "user_whitelist": None,  # comma-separated usernames
-    "access_token": None,
-    "test_mode": "off",  # off/safe/test-users
-}
 LETTERS = "abcdefghijklmnopqrstuvwxyzΐάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϳабвгдежзийклмнопрстуфхцчшщ\
 ъыьэюяҋҍҏґғҕҗҙқҝҟҡңҥҧҩҫҭүұҳҵҷҹһҽҿӂӄӆӈӊӌӎӏӑӓӕӗәӛӝӟӡӣӥӧөӫӭӯӱӳӵӷӹաբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցւփքօֆ\
 ևაბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰⰰⰱⰲⰳⰴⰵⰶⰷⰸⰹⰺⰻⰼⰽⰾⰿⱀⱁⱂⱃⱄⱅⱆⱇⱈⱉⱊⱋⱌⱍⱎⱏⱐ"
@@ -33,7 +21,9 @@ LETTERS = "abcdefghijklmnopqrstuvwxyzΐάέήίΰαβγδεζηθικλμνξο�
 
 class App:
     def __init__(self):
+        self.configly = None
         self.cfg = {}
+        self.api_key = None
         self.safe_mode = False
         self.test_users_mode = False
         self.setting_regex = None
@@ -45,23 +35,28 @@ class App:
         loglevel = logging.DEBUG if "DEBUG" in os.environ else logging.INFO
         logging.basicConfig(level=loglevel)
 
-        for key, val in DEFAULT_CONFIG.items():
-            var_name = ENV_VAR_PREFIX + key.upper()
-            assert (
-                val is not ... or var_name in os.environ
-            ), f"Required env variable {var_name} is missing"
-            self.cfg[key] = os.environ.get(var_name, val)
-
         assert (
-            len(self.cfg["hashtag_prefix"]) <= 4
-        ), "Hashtag prefix must be up to 4 characters long"  # len(prefix) + len('p19') + 128/3 <= 50
+            "ASKFM_API_KEY" in os.environ
+        ), "Required env variable ASKFM_API_KEY is missing"
+        self.api_key = os.environ["ASKFM_API_KEY"]
+
+        if "CONFIGLY_LOCAL_FILE" in os.environ:
+            with open(os.environ["CONFIGLY_LOCAL_FILE"], "r") as f:
+                self.configly = json.load(f)
+        else:
+            assert (
+                "CONFIGLY_API_KEY" in os.environ
+            ), "Required env variable CONFIGLY_API_KEY is missing"
+            configly.access_token = os.environ["CONFIGLY_API_KEY"]
+            self.configly = configly
+        self.cfg = self.get_cfg("config")
 
         self.setting_regex = re.compile(
             re.escape(self.cfg["hashtag_prefix"])
             + r"([^9]+9?)(.*)"  # why not use 9 as delimiter ¯\_(ツ)_/¯
         )
 
-        test_mode = self.cfg["test_mode"]
+        test_mode = self.cfg.get("test_mode", "off")
         if test_mode == "safe":
             self.safe_mode = True
             logging.warning("Running in safe mode")
@@ -72,10 +67,14 @@ class App:
             assert test_mode == "off", f"Invalid test_mode: {test_mode}"
 
     def init_crypto(self):
-        keydata = self.cfg["private_key"].encode("ascii")
+        assert (
+            "AFH_PRIVATE_KEY" in os.environ and "AFH_PUBLIC_KEY" in os.environ
+        ), "Required env variable AFH_PRIVATE_KEY/AFH_PUBLIC_KEY is missing"
+
+        keydata = os.environ["AFH_PRIVATE_KEY"].encode("ascii")
         self.rsa_priv = rsa.PrivateKey.load_pkcs1(keydata)
 
-        keydata = self.cfg["public_key"].encode("ascii")
+        keydata = os.environ["AFH_PUBLIC_KEY"].encode("ascii")
         self.rsa_pub = rsa.PublicKey.load_pkcs1(keydata)
 
         assert len(LETTERS) == 256
@@ -97,17 +96,18 @@ class App:
             logging.info(f"Main loop: finished iteration in {delta:.2f}s")
             time.sleep(MAIN_LOOP_SLEEP_SEC)
 
+    def get_cfg(self, key):
+        return self.configly.get(key)
+
     def create_bot_api(self, *, login=True):
-        token = self.cfg["access_token"]
-        api = ExtendedApi(
-            self.cfg["api_key"], access_token=token, safe_mode=self.safe_mode
-        )
+        token = self.cfg.get("access_token")
+        api = ExtendedApi(self.api_key, access_token=token, safe_mode=self.safe_mode)
         if token is None and login:
             api.login(self.cfg["bot_username"], self.cfg["bot_password"])
         return api
 
     def create_user_api(self, login, passwd):
-        api = ExtendedApi(self.cfg["api_key"], safe_mode=self.safe_mode)
+        api = ExtendedApi(self.api_key, safe_mode=self.safe_mode)
         api.login(login, passwd)
         return api
 

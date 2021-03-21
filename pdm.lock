@@ -48,6 +48,15 @@ version = "7.1.2"
 summary = "Composable command line interface toolkit"
 
 [[package]]
+name = "configly-python"
+sections = ["default"]
+version = "1.0.8"
+summary = "The Official Python Library for Configly - the modern config/static data key/value store"
+dependencies = [
+    "requests; python_version >= \"3\" and python_version < \"4\"",
+]
+
+[[package]]
 name = "idna"
 sections = ["default"]
 version = "2.10"
@@ -130,7 +139,7 @@ summary = "HTTP library with thread-safe connection pooling, file post, and more
 
 [metadata]
 lock_version = "2"
-content_hash = "sha256:3d00a7de378e12c1b0f19021cc384e7365fe711902688cd6d14600376db04ad4"
+content_hash = "sha256:cc578a16a6e4e7aa6b5e3f77738ed1ea5948e64c8340df9d29062770d3d39018"
 
 [metadata.files]
 "appdirs 1.4.4" = [
@@ -155,6 +164,10 @@ content_hash = "sha256:3d00a7de378e12c1b0f19021cc384e7365fe711902688cd6d14600376
 "click 7.1.2" = [
     {file = "click-7.1.2-py2.py3-none-any.whl", hash = "sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"},
     {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
+]
+"configly-python 1.0.8" = [
+    {file = "configly_python-1.0.8-py3-none-any.whl", hash = "sha256:fbcfc6fec4f1081bf352e36b8bfb25cc309c008de2001a6aac423686eb673696"},
+    {file = "configly-python-1.0.8.tar.gz", hash = "sha256:5ff76692968f325687f86e9cbcb0503510ebd40b2d5c3483eedf32c7b4a80cfa"},
 ]
 "idna 2.10" = [
     {file = "idna-2.10-py2.py3-none-any.whl", hash = "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"},
