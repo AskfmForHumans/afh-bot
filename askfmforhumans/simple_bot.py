@@ -7,12 +7,16 @@ class SimpleBot:
     def __init__(self, app):
         self.app = app
         self.api = app.create_bot_api(login=False)
-
-        unames = app.cfg["user_whitelist"].split(",")
-        self.users = [User(uname, self.app) for uname in unames]
+        self.users = {}
 
     def tick(self):
-        for user in self.users:
-            profile = self.api.request(r.fetch_profile(user.uname))
+        for uname, token in self.app.get_cfg("users").items():
+            if uname not in self.users:
+                self.users[uname] = User(uname, self.app)
+
+            user = self.users[uname]
+            profile = self.api.request(r.fetch_profile(uname))
             user.update_profile(profile)
+            if user.api is None:
+                user.try_login(token)
             user.tick()

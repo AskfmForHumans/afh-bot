@@ -3,40 +3,11 @@
     "description": "Multifunctional bot intended to mend some of ASKfm's screwups",
     "repository": "https://github.com/AskfmForHumans/afh-bot",
     "env": {
-        "AFH_API_KEY": {
+        "ASKFM_API_KEY": {
             "description": "ASKfm API signing key in hex"
         },
-        "AFH_HASHTAG": {
-            "description": "Hashtag for user discovery",
-            "value": "askfmforhumans"
-        },
-        "AFH_HASHTAG_PREFIX": {
-            "description": "Short prefix for user settings",
-            "value": "afh"
-        },
-        "AFH_PRIVATE_KEY": {
-            "description": "1024-bit RSA private key in PKCS#1 v1.5 PEM format"
-        },
-        "AFH_PUBLIC_KEY": {
-            "description": "1024-bit RSA public key in PKCS#1 v1.5 PEM format"
-        },
-        "AFH_BOT_TYPE": {
-            "description": "Bot type: normal/simple. Defaults to normal.",
-            "value": "normal",
-            "required": false
-        },
-        "AFH_BOT_USERNAME": {
-            "description": "Bot username (required when bot type is normal, useless otherwise)",
-            "value": "AskForHumans",
-            "required": false
-        },
-        "AFH_BOT_PASSWORD": {
-            "description": "Bot password (required when bot type is normal, useless otherwise)",
-            "required": false
-        },
-        "AFH_USER_WHITELIST": {
-            "description": "Comma-separated usernames (required when bot type is simple, useless otherwise)",
-            "required": false
+        "CONFIGLY_API_KEY": {
+            "description": "Configly API key"
         }
     },
     "formation": {

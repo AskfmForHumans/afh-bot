@@ -81,12 +81,6 @@ version = "0.8.1"
 summary = "Utility library for gitignore style pattern matching of file paths."
 
 [[package]]
-name = "pyasn1"
-sections = ["default"]
-version = "0.4.8"
-summary = "ASN.1 types and codecs"
-
-[[package]]
 name = "regex"
 sections = ["dev"]
 version = "2020.11.13"
@@ -102,15 +96,6 @@ dependencies = [
     "idna<3,>=2.5",
     "urllib3<1.27,>=1.21.1",
     "certifi>=2017.4.17",
-]
-
-[[package]]
-name = "rsa"
-sections = ["default"]
-version = "4.7.2"
-summary = "Pure-Python RSA implementation"
-dependencies = [
-    "pyasn1>=0.1.3",
 ]
 
 [[package]]
@@ -139,7 +124,7 @@ summary = "HTTP library with thread-safe connection pooling, file post, and more
 
 [metadata]
 lock_version = "2"
-content_hash = "sha256:cc578a16a6e4e7aa6b5e3f77738ed1ea5948e64c8340df9d29062770d3d39018"
+content_hash = "sha256:cca0b3177169b6d2527be7a085eec93f1c72830254b2f5cd5a1a9953f277f6a3"
 
 [metadata.files]
 "appdirs 1.4.4" = [
@@ -184,10 +169,6 @@ content_hash = "sha256:cc578a16a6e4e7aa6b5e3f77738ed1ea5948e64c8340df9d29062770d
 "pathspec 0.8.1" = [
     {file = "pathspec-0.8.1-py2.py3-none-any.whl", hash = "sha256:aa0cb481c4041bf52ffa7b0d8fa6cd3e88a2ca4879c533c9153882ee2556790d"},
     {file = "pathspec-0.8.1.tar.gz", hash = "sha256:86379d6b86d75816baba717e64b1a3a3469deb93bb76d613c9ce79edc5cb68fd"},
-]
-"pyasn1 0.4.8" = [
-    {file = "pyasn1-0.4.8-py2.py3-none-any.whl", hash = "sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d"},
-    {file = "pyasn1-0.4.8.tar.gz", hash = "sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba"},
 ]
 "regex 2020.11.13" = [
     {file = "regex-2020.11.13-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:8b882a78c320478b12ff024e81dc7d43c1462aa4a3341c754ee65d857a521f85"},
@@ -235,10 +216,6 @@ content_hash = "sha256:cc578a16a6e4e7aa6b5e3f77738ed1ea5948e64c8340df9d29062770d
 "requests 2.25.1" = [
     {file = "requests-2.25.1-py2.py3-none-any.whl", hash = "sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e"},
     {file = "requests-2.25.1.tar.gz", hash = "sha256:27973dd4a904a4f13b263a19c866c13b92a39ed1c964655f025f3f8d3d75b804"},
-]
-"rsa 4.7.2" = [
-    {file = "rsa-4.7.2-py3-none-any.whl", hash = "sha256:78f9a9bf4e7be0c5ded4583326e7461e3a3c5aae24073648b4bdfa797d78c9d2"},
-    {file = "rsa-4.7.2.tar.gz", hash = "sha256:9d689e6ca1b3038bc82bf8d23e944b6b6037bc02301a574935b2dd946e0353b9"},
 ]
 "toml 0.10.2" = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},

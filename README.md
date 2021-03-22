@@ -11,8 +11,7 @@ Multifunctional bot intended to mend some of [ASKfm](https://ask.fm)'s screwups.
   - find people with the configured hashtag
   - send them an inviting question
 - user settings
-  - stored in the user's hashtags in the form `#<hashtag_prefix><setting_name>[9<value>]`
-  - RSA-encrypted password is split into 3 parts (ASKfm's hashtag length limit is 50 characters)
+  - stored in the user's profile bio in the form `key=value` under a configured header
 - remove all shoutouts for logged-in users
   - use the `stop` setting to disable
   - use the `autoblock` setting to block the authors of all shoutouts
@@ -26,14 +25,12 @@ This code is ready to run on Heroku. Just click a button:
 
 ### Config
 
-Documented in [.env.example](.env.example).
+Basic config is described in [.env.example](.env.example).
+More config will be documented later.
 
 ### Real-world usage experience
 
-I've been running the bot for ~1 week with 3-4 active users before it was blocked by ASKfm without any warning.
-Don't know if it's because it asked users for their passwords or for other reasons.
-
-Running in simple mode without a bot has been OK so far.
+See this [issue](https://github.com/AskfmForHumans/afh-bot/issues/3)
 
 ## Todo & Roadmap
 

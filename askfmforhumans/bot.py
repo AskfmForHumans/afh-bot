@@ -3,7 +3,6 @@ import logging
 from askfm_api import requests as r
 
 from askfmforhumans import messages
-from askfmforhumans.commands import COMMANDS
 from askfmforhumans.user import User
 
 
@@ -16,12 +15,13 @@ class Bot:
     def tick(self):
         # Delay question processing until after updating users to avoid race condition.
         # E.g. a user first sends us a question, then adds our hashtag.
-        qs = list(self.api.fetch_new_questions())
+        # qs = list(self.api.fetch_new_questions())
         self.api.request(r.mark_notifs_as_read("SHOUTOUT"))
         self.update_users()
-        self.process_questions(qs)
+        # self.process_questions(qs)
 
     def update_users(self):
+        tokens = self.app.get_cfg("users")
         for user in self.api.request_iter(
             r.search_users_by_hashtag(self.app.cfg["hashtag"])
         ):
@@ -34,6 +34,8 @@ class Bot:
                 user = self.users[uname]
                 user.update_profile(profile)
 
+            if uname in tokens and user.active and user.api is None:
+                user.try_login(tokens[uname])
             user.tick()
 
     def register_user(self, uname, profile):

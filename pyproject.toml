@@ -1,6 +1,6 @@
 [project]
 dependencies = [
-    "rsa~=4.7",
+    
     "askfm-api~=0.1",
     "configly-python~=1.0",
 ]
