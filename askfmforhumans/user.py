@@ -28,8 +28,8 @@ class User:
 
         new_active = (
             self.app.cfg["hashtag"] in profile["hashtags"]
-            and not (self.app.test_users_mode and "test" not in self.settings)
-            and "stop" not in self.settings
+            and not (self.app.test_users_mode and "тест" not in self.settings)
+            and "стоп" not in self.settings
         )
         if self.active != new_active:
             logging.info(f"User {self.uname} active={new_active}")
@@ -47,7 +47,7 @@ class User:
                 # Logging shoutout bodies is ok since they aren't private by definition
                 logging.info(f"Got {qtype} {qid} for {self.uname}{qfrom}: {qtext}")
 
-                if "autoblock" in self.settings:
+                if "автоблок" in self.settings:
                     logging.info(f"Deleting {qid} and blocking its author")
                     self.api.request(r.report_question(qid, should_block=True))
                 else:
