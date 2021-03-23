@@ -10,7 +10,8 @@ class SimpleBot:
         self.users = {}
 
     def tick(self):
-        for uname, token in self.app.get_cfg("users").items():
+        for user_doc in self.app.db.users.find():
+            uname, token = user_doc["uname"], user_doc["access_token"]
             if uname not in self.users:
                 self.users[uname] = User(uname, self.app)
 

@@ -21,7 +21,7 @@ class Bot:
         # self.process_questions(qs)
 
     def update_users(self):
-        tokens = self.app.get_cfg("users")
+        users_db = self.app.db.users
         for user in self.api.request_iter(
             r.search_users_by_hashtag(self.app.cfg["hashtag"])
         ):
@@ -34,8 +34,9 @@ class Bot:
                 user = self.users[uname]
                 user.update_profile(profile)
 
-            if uname in tokens and user.active and user.api is None:
-                user.try_login(tokens[uname])
+            if user.active and user.api is None:
+                if user_doc := users_db.find_one({"uname": uname}):
+                    user.try_login(user_doc["access_token"])
             user.tick()
 
     def register_user(self, uname, profile):

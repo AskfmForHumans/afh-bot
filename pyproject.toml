@@ -1,8 +1,7 @@
 [project]
 dependencies = [
-    
     "askfm-api~=0.1",
-    "configly-python~=1.0",
+    "pymongo[srv,tls]~=3.11",
 ]
 dev-dependencies = [
     "black~=20.8b1",
