@@ -3,11 +3,8 @@
     "description": "Multifunctional bot intended to mend some of ASKfm's screwups",
     "repository": "https://github.com/AskfmForHumans/afh-bot",
     "env": {
-        "ASKFM_API_KEY": {
-            "description": "ASKfm API signing key in hex"
-        },
-        "CONFIGLY_API_KEY": {
-            "description": "Configly API key"
+        "MONGODB_URL": {
+            "description": "URL for MongoDB connection"
         }
     },
     "formation": {

@@ -9,9 +9,9 @@ CACHE_SIZE = 32
 
 
 class ExtendedApi(AskfmApi):
-    def __init__(self, *args, safe_mode=False, **kwargs):
+    def __init__(self, *args, dry_mode=False, **kwargs):
         # super().__init__() calls request(), so this should come before.
-        self.safe_mode = safe_mode
+        self.dry_mode = dry_mode
         super().__init__(*args, **kwargs)
 
         self._reqid = 0
@@ -20,10 +20,9 @@ class ExtendedApi(AskfmApi):
         self._seen_reqid = lru_cache(maxsize=CACHE_SIZE)(self._seen_reqid)
 
     def request(self, req, **kwargs):
-        if not self.safe_mode or req.method == "GET" or req.name == "login":
+        if not self.dry_mode or req.method == "GET" or req.name == "login":
             return super().request(req, **kwargs)
-
-        logging.info(f"Safe mode: ignoring {req.method} to {req.path}")
+        logging.info(f"Dry mode: ignoring {req.method} to {req.path}")
         return {}
 
     def fetch_new_questions(self):
@@ -57,5 +56,6 @@ class ExtendedApi(AskfmApi):
         # updatedAt is needed for threads and deleted answers.
         return self._seen_reqid(q["qid"], q["updatedAt"]) == self._reqid
 
+    # Decorated with lru_cache in __init__() above
     def _seen_reqid(self, qid, qts):
         return self._reqid
