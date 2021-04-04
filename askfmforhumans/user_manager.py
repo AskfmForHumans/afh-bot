@@ -14,6 +14,9 @@ class UserManager:
         dry_mode, test_mode = config["dry_mode"], config["test_mode"]
         if dry_mode or test_mode:
             logging.warning(f"User manager: {dry_mode=} {test_mode=}")
+        app.add_task(
+            "user_manager", self.tick, self.config.get("tick_interval_sec", 30)
+        )
 
         self.users = {}
         self.db = app.db_collection("users")

@@ -10,6 +10,8 @@ class Bot:
         self.app = app
         self.config = config
         self.user_manager = app.require_module("user_manager")
+        app.add_task("bot", self.tick, self.config.get("tick_interval_sec", 30))
+
         self.api = self.user_manager.create_api()
         self.api.login(config["username"], config["password"])
 
