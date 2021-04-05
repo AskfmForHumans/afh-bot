@@ -5,18 +5,31 @@ from pymongo.collection import ReturnDocument
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.user_worker import UserWorker
+from askfmforhumans.util import prepare_config
 
 
 class UserManager:
+    MOD_NAME = "user_manager"
+    CONFIG_SCHEMA = {
+        # "..." means the field has no default and is therefore required
+        "signing_key": ...,
+        "settings_header": ...,
+        "dry_mode": False,
+        "test_mode": False,
+        "hashtag": None,
+        "require_hashtag": True,
+        "tick_interval_sec": 30,
+    }
+
     def __init__(self, app, config):
         self.app = app
-        self.config = config
-        dry_mode, test_mode = config["dry_mode"], config["test_mode"]
+        self.config = prepare_config(
+            config, self.CONFIG_SCHEMA, schema_name=self.MOD_NAME
+        )
+        dry_mode, test_mode = self.config["dry_mode"], self.config["test_mode"]
         if dry_mode or test_mode:
             logging.warning(f"User manager: {dry_mode=} {test_mode=}")
-        app.add_task(
-            "user_manager", self.tick, self.config.get("tick_interval_sec", 30)
-        )
+        app.add_task(self.MOD_NAME, self.tick, self.config["tick_interval_sec"])
 
         self.users = {}
         self.db = app.db_collection("users")
