@@ -3,13 +3,8 @@ import logging
 from askfm_api import AskfmApiError
 from askfm_api import requests as r
 
+from askfmforhumans.ui_strings import user_settings_map
 from askfmforhumans.util import MyDataclass
-
-SETTINGS_MAP = {
-    "стоп": "stop",
-    "тест": "test",
-    "автоблок": "autoblock",
-}
 
 
 class UserSettings(MyDataclass):
@@ -59,7 +54,7 @@ class UserWorker:
             parts = line.partition("=")
             k, v = parts[0].strip(), parts[2].strip()
             if k:
-                k = SETTINGS_MAP.get(k, k)
+                k = user_settings_map.get(k, k)
                 v = v or True
                 settings[k] = v
         return settings

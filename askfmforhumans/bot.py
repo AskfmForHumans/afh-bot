@@ -2,7 +2,7 @@ import logging
 
 from askfm_api import requests as r
 
-from askfmforhumans import messages
+from askfmforhumans import ui_strings
 from askfmforhumans.util import MyDataclass
 
 
@@ -49,7 +49,7 @@ class Bot:
                 self.api.request(
                     r.send_question(
                         uname,
-                        messages.greet_user.format(full_name=user.profile["fullName"]),
+                        ui_strings.greet_user.format(full_name=user.profile["fullName"]),
                     )
                 )
                 self.user_manager.update_user_model(uname, {"greeted": True})
