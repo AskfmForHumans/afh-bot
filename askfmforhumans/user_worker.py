@@ -3,18 +3,40 @@ import logging
 from askfm_api import AskfmApiError
 from askfm_api import requests as r
 
+from askfmforhumans.util import MyDataclass
+
+SETTINGS_MAP = {
+    "стоп": "stop",
+    "тест": "test",
+    "автоблок": "autoblock",
+}
+
+
+class UserSettings(MyDataclass):
+    stop: bool = False
+    test: bool = False
+    autoblock: bool = False
+
+
+class UserModel(MyDataclass):
+    created_by: str = None
+    ignore: bool = False
+    access_token: str = None
+    greeted: bool = False
+
 
 class UserWorker:
     def __init__(self, uname, mgr):
         self.uname = uname
         self.mgr = mgr
+        self.model = UserModel()
+        self.settings = UserSettings()
         self.api = None
-        self.model = {}
-        self.settings = {}
         self.profile = None
         self.active = False
 
     def update_model(self, model):
+        model = UserModel.from_dict(model)
         if self.model != model:
             logging.info(f"User {self.uname} {model=}")
         self.model = model
@@ -22,14 +44,14 @@ class UserWorker:
 
     def update_profile(self, profile):
         self.profile = profile
-        settings = self.extract_settings(profile)
+        settings = UserSettings.from_dict(self.extract_settings(profile))
         if self.settings != settings:
             logging.info(f"User {self.uname} {settings=}")
         self.settings = settings
         self.check_active()
 
     def extract_settings(self, profile):
-        header = self.mgr.config["settings_header"]
+        header = self.mgr.config.settings_header
         settings = {}
         bio = "\n" + profile["bio"].replace("\r\n", "\n")
         lines = bio.partition(f"\n{header}\n")[2].split("\n")
@@ -37,6 +59,8 @@ class UserWorker:
             parts = line.partition("=")
             k, v = parts[0].strip(), parts[2].strip()
             if k:
+                k = SETTINGS_MAP.get(k, k)
+                v = v or True
                 settings[k] = v
         return settings
 
@@ -49,22 +73,22 @@ class UserWorker:
     def is_active(self):
         if not self.profile:
             return False
-        if self.model.get("ignore"):
+        if self.model.ignore:
             return False
         if (
-            self.mgr.config["require_hashtag"]
-            and self.mgr.config["hashtag"] not in self.profile["hashtags"]
+            self.mgr.config.require_hashtag
+            and self.mgr.config.hashtag not in self.profile["hashtags"]
         ):
             return False
-        if self.mgr.config["test_mode"] and "тест" not in self.settings:
+        if self.mgr.config.test_mode and not self.settings.test:
             return False
-        if "стоп" in self.settings:
+        if self.settings.stop:
             return False
         return True
 
     def tick(self):
-        if self.api is None and "access_token" in self.model:
-            self.try_login(self.model["access_token"])
+        if self.api is None and self.model.access_token:
+            self.try_login(self.model.access_token)
         if self.api is not None:
             self.process_questions()
 
@@ -85,7 +109,7 @@ class UserWorker:
                 # Logging shoutout bodies is ok since they aren't private by definition
                 logging.info(f"Got {qtype} {qid} for {self.uname}{qfrom}: {qtext}")
 
-                if "автоблок" in self.settings:
+                if self.settings.autoblock:
                     logging.info(f"Deleting {qid} and blocking its author")
                     self.api.request(r.report_question(qid, should_block=True))
                 else:

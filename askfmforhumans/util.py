@@ -1,24 +1,50 @@
+import dataclasses
+import inspect
 from typing import Any
 
 
-def prepare_config(
-    config: dict[str, Any],
-    schema: dict[str, Any],
-    allow_extra: bool = True,
-    schema_name: str = "<unnamed>",
-):
-    if not allow_extra:
-        for key in config:
-            assert (
-                key in schema
-            ), f"Key {key!r} not allowed in config schema {schema_name!r}"
-    res = {}
-    for key, val in schema.items():
-        if key in config:
-            res[key] = config[key]
-        else:
-            assert (
-                val is not ...
-            ), f"Key {key!r} required in config schema {schema_name!r}"
-            res[key] = val
-    return res
+class MyDataclass:
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        dataclasses.dataclass(cls)
+
+    @classmethod
+    def from_dict(
+        cls,
+        src: dict[str, Any],
+        /,
+        *,
+        allow_extra: bool = True,
+        raise_errors: bool = True,
+    ):
+        schema = inspect.signature(cls).parameters
+        schema_name = cls.__name__
+
+        # check extra keys
+        if not allow_extra:
+            for key in src:
+                if key in schema:
+                    continue
+                elif raise_errors:
+                    raise AssertionError(
+                        f"Key {key!r} not allowed in schema {schema_name!r}"
+                    )
+                else:
+                    return None
+
+        # check required keys
+        res = {}
+        for key, param in schema.items():
+            if key in src:
+                res[key] = src[key]
+            elif param.default is not inspect.Parameter.empty:
+                continue
+            elif raise_errors:
+                raise AssertionError(f"Key {key!r} required in schema {schema_name!r}")
+            else:
+                return None
+
+        return cls(**res)
+
+    def as_dict(self):
+        return dataclasses.asdict(self)

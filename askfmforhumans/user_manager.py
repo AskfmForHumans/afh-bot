@@ -5,31 +5,29 @@ from pymongo.collection import ReturnDocument
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.user_worker import UserWorker
-from askfmforhumans.util import prepare_config
+from askfmforhumans.util import MyDataclass
+
+
+class UserManagerConfig(MyDataclass):
+    signing_key: str
+    settings_header: str
+    dry_mode: bool = False
+    test_mode: bool = False
+    hashtag: str = None
+    require_hashtag: bool = True
+    tick_interval_sec: int = 30
 
 
 class UserManager:
     MOD_NAME = "user_manager"
-    CONFIG_SCHEMA = {
-        # "..." means the field has no default and is therefore required
-        "signing_key": ...,
-        "settings_header": ...,
-        "dry_mode": False,
-        "test_mode": False,
-        "hashtag": None,
-        "require_hashtag": True,
-        "tick_interval_sec": 30,
-    }
 
     def __init__(self, app, config):
         self.app = app
-        self.config = prepare_config(
-            config, self.CONFIG_SCHEMA, schema_name=self.MOD_NAME
-        )
-        dry_mode, test_mode = self.config["dry_mode"], self.config["test_mode"]
+        self.config = UserManagerConfig.from_dict(config)
+        dry_mode, test_mode = self.config.dry_mode, self.config.test_mode
         if dry_mode or test_mode:
             logging.warning(f"User manager: {dry_mode=} {test_mode=}")
-        app.add_task(self.MOD_NAME, self.tick, self.config["tick_interval_sec"])
+        app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
 
         self.users = {}
         self.db = app.db_collection("users")
@@ -37,9 +35,9 @@ class UserManager:
 
     def create_api(self, token=None):
         return ExtendedApi(
-            self.config["signing_key"],
+            self.config.signing_key,
             access_token=token,
-            dry_mode=self.config["dry_mode"],
+            dry_mode=self.config.dry_mode,
         )
 
     def user_discovered(self, uname):
@@ -47,7 +45,6 @@ class UserManager:
         res = self.db.update_one({"uname": uname}, {"$setOnInsert": model}, upsert=True)
         if res.upserted_id:
             logging.info(f"Discovered new user {uname}")
-            model["_id"] = res.upserted_id
             self.update_user(model)
 
     def update_user(self, model):
