@@ -5,6 +5,8 @@ from askfm_api import requests as r
 from askfmforhumans import ui_strings
 from askfmforhumans.util import MyDataclass
 
+CREATED_BY = "discovery_hashtag"
+
 
 class BotConfig(MyDataclass):
     username: str
@@ -24,7 +26,7 @@ class Bot:
         app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
 
         self.api = self.user_manager.create_api()
-        self.api.login(self.config.username, self.config.password)
+        self.api.log_in(self.config.username, self.config.password)
 
     def tick(self):
         if self.config.search_by_hashtag:
@@ -36,20 +38,22 @@ class Bot:
         for user in self.api.request_iter(
             r.search_users_by_hashtag(self.user_manager.config.hashtag)
         ):
-            self.user_manager.user_discovered(user["uid"])
+            self.user_manager.create_user(user["uid"], CREATED_BY)
 
     def greet_users(self):
         for uname, user in self.user_manager.users.items():
             if (
                 user.active
                 and not user.model.greeted
-                and user.model.created_by == "discovery_hashtag"
+                and user.model.created_by == CREATED_BY
             ):
                 logging.info(f"Greeting {uname}")
                 self.api.request(
                     r.send_question(
                         uname,
-                        ui_strings.greet_user.format(full_name=user.profile["fullName"]),
+                        ui_strings.greet_user.format(
+                            full_name=user.profile["fullName"]
+                        ),
                     )
                 )
-                self.user_manager.update_user_model(uname, {"greeted": True})
+                self.user_manager.update_user(uname, {"greeted": True})

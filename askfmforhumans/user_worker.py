@@ -15,9 +15,10 @@ class UserSettings(MyDataclass):
 
 class UserModel(MyDataclass):
     created_by: str = None
-    ignore: bool = False
-    access_token: str = None
     greeted: bool = False
+    device_id: str = None
+    access_token: str = None
+    password: str = None
 
 
 class UserWorker:
@@ -26,7 +27,7 @@ class UserWorker:
         self.mgr = mgr
         self.model = UserModel()
         self.settings = UserSettings()
-        self.api = None
+        self.api = mgr.create_api(auto_refresh_session=False)
         self.profile = None
         self.active = False
 
@@ -66,35 +67,44 @@ class UserWorker:
         self.active = active
 
     def is_active(self):
+        cfg = self.mgr.config
+
         if not self.profile:
             return False
-        if self.model.ignore:
+        if cfg.require_hashtag and cfg.hashtag not in self.profile["hashtags"]:
             return False
-        if (
-            self.mgr.config.require_hashtag
-            and self.mgr.config.hashtag not in self.profile["hashtags"]
-        ):
-            return False
-        if self.mgr.config.test_mode and not self.settings.test:
+        if cfg.test_mode and not self.settings.test:
             return False
         if self.settings.stop:
             return False
         return True
 
     def tick(self):
-        if self.api is None and self.model.access_token:
-            self.try_login(self.model.access_token)
-        if self.api is not None:
-            self.process_questions()
+        self.update_auth()
+        if self.api.logged_in:
+            try:
+                self.process_questions()
+            except AskfmApiError:
+                self.save_auth()
+                raise
+            else:
+                self.save_auth()
 
-    def try_login(self, token):
-        try:
-            self.api = self.mgr.create_api(token)
-            logging.info(f"Logged in as {self.uname}")
-            return True
-        except AskfmApiError as e:
-            logging.warning(f"Failed logging in as {self.uname}: {e}")
-            return False
+    def update_auth(self):
+        api, model = self.api, self.model
+        api.device_id = model.device_id or api.device_id
+        api.auth = (self.uname, model.password) if model.password else None
+        api.access_token = model.access_token or api.access_token
+
+        if not api.logged_in:
+            if api.access_token:
+                api.logged_in = True
+            elif api.auth:
+                api.refresh_session()
+
+    def save_auth(self):
+        if self.api.access_token != self.model.access_token:
+            self.mgr.update_user(self.uname, {"access_token": self.api.access_token})
 
     def process_questions(self):
         for q in self.api.fetch_new_questions():

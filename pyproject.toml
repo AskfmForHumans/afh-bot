@@ -1,11 +1,7 @@
 [project]
 dependencies = [
-    "askfm-api~=0.1",
+    "askfm-api==0.2.0b1",
     "pymongo[srv,tls]~=3.11",
-]
-dev-dependencies = [
-    "black~=20.8b1",
-    "isort~=5.7",
 ]
 requires-python = ">=3.9"
 license = {text = "MIT"}
@@ -13,17 +9,22 @@ license = {text = "MIT"}
 [project.urls]
 homepage = "https://github.com/AskfmForHumans/afh-bot"
 
+[tool.pdm.dev-dependencies]
+dev = [
+    "black~=20.8b1",
+    "isort~=5.8",
+]
+
 [tool.pdm.scripts]
 _.env_file = ".env"
 start = "python -m askfmforhumans"
-format.shell = """
-    echo isort\
-    && isort --profile black --fss --skip-gitignore .\
-    && echo black\
-    && black .
-    """
+format = {shell = "echo isort && isort . && echo black && black ."}
 export = "pdm export -o requirements.txt"
-pushenv = "heroku config:push -oc"
+
+[tool.isort]
+profile = "black"
+force_sort_within_sections = true
+skip_gitignore = true
 
 [build-system]
 requires = ["pdm-pep517"]

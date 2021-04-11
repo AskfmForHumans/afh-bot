@@ -7,6 +7,8 @@ from askfmforhumans.api import ExtendedApi
 from askfmforhumans.user_worker import UserWorker
 from askfmforhumans.util import MyDataclass
 
+USERS_QUERY = {"ignore": {"$ne": True}}
+
 
 class UserManagerConfig(MyDataclass):
     signing_key: str
@@ -33,45 +35,52 @@ class UserManager:
         self.db = app.db_collection("users")
         self.anon_api = self.create_api()
 
-    def create_api(self, token=None):
+    def create_api(self, **kwargs):
         return ExtendedApi(
             self.config.signing_key,
-            access_token=token,
             dry_mode=self.config.dry_mode,
+            **kwargs,
         )
 
-    def user_discovered(self, uname):
-        model = {"uname": uname, "created_by": "discovery_hashtag"}
+    def create_user(self, uname, created_by):
+        model = {
+            "uname": uname,
+            "created_by": created_by,
+            "device_id": ExtendedApi.random_device_id(),
+        }
         res = self.db.update_one({"uname": uname}, {"$setOnInsert": model}, upsert=True)
         if res.upserted_id:
-            logging.info(f"Discovered new user {uname}")
-            self.update_user(model)
+            logging.info(f"Created user {uname}: {created_by=}")
+            self.update_user_local(uname, model)
 
-    def update_user(self, model):
-        uname = model["uname"]
-        user = self.update_user_model(uname, model, local=True)
-        profile = self.anon_api.request(r.fetch_profile(uname))
-        user.update_profile(profile)
-        return user
+    def update_user_local(self, uname, model, *, fetch_profile=True):
+        if model is None or model.get("ignore"):
+            return None
 
-    def update_user_model(self, uname, model, *, local=False):
-        if not local:
-            model = self.db.find_one_and_update(
-                {"uname": uname}, {"$set": model}, return_document=ReturnDocument.AFTER
-            )
-            if model is None:
-                return None
         if uname not in self.users:
             self.users[uname] = UserWorker(uname, self)
         user = self.users[uname]
+
         user.update_model(model)
+
+        if fetch_profile:
+            profile = self.anon_api.request(r.fetch_profile(uname))
+            user.update_profile(profile)
+
         return user
+
+    def update_user(self, uname, model):
+        query = {"uname": uname, **USERS_QUERY}
+        model = self.db.find_one_and_update(
+            query, {"$set": model}, return_document=ReturnDocument.AFTER
+        )
+        return self.update_user_local(uname, model, fetch_profile=False)
 
     def tick(self):
         new_users = {}
-        for model in self.db.find({"ignore": {"$ne": True}}):
-            user = self.update_user(model)
-            if user:
+        for model in self.db.find(USERS_QUERY):
+            uname = model["uname"]
+            if user := self.update_user_local(uname, model):
                 new_users[user.uname] = user
                 if user.active:
                     user.tick()
