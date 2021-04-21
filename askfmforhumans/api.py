@@ -1,11 +1,38 @@
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from itertools import takewhile
 import logging
 
-from askfm_api import AskfmApi
-from askfm_api import requests as r
+from askfm_api import AskfmApi, AskfmApiError, requests
+
+from askfmforhumans.util import MyDataclass
 
 CACHE_SIZE = 32
+
+
+class ApiManagerConfig(MyDataclass):
+    signing_key: str
+    dry_mode: bool = False
+
+
+class ApiManager:
+    MOD_NAME = "api_manager"
+
+    def __init__(self, app, config):
+        self.config = ApiManagerConfig.from_dict(config)
+        if dry_mode := self.config.dry_mode:
+            logging.warning(f"API manager: {dry_mode=}")
+
+    def create_api(self, **kwargs):
+        return ExtendedApi(
+            self.config.signing_key,
+            dry_mode=self.config.dry_mode,
+            **kwargs,
+        )
+
+    @cached_property
+    def anon_api(self):
+        logging.info("API manager: creating anon API")
+        return self.create_api()
 
 
 class ExtendedApi(AskfmApi):
@@ -39,7 +66,9 @@ class ExtendedApi(AskfmApi):
 
         self._reqid += 1
         self._new_qs = 0
-        return takewhile(self._not_seen_before, self.request_iter(r.fetch_questions()))
+        return takewhile(
+            self._not_seen_before, self.request_iter(requests.fetch_questions())
+        )
 
     def _not_seen_before(self, q):
         if q["type"] == "daily":

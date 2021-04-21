@@ -1,12 +1,23 @@
+from dataclasses import field
 import logging
 import os
 import sched
 import time
+from typing import Any, Callable, Optional
 
-from askfm_api import AskfmApiError
 from pymongo import MongoClient
 
+from askfmforhumans.api import AskfmApiError
 from askfmforhumans.errors import AppError
+from askfmforhumans.util import MyDataclass
+
+
+class AppModule(MyDataclass):
+    factory: Callable
+    active: bool = False
+    enabled: Optional[bool] = None
+    instance: Any = None
+    config: dict = field(default_factory=dict)
 
 
 class App:
@@ -14,34 +25,28 @@ class App:
         self.config = None
         self.db = None
         self.modules = {}
-        self.active_modules = set()
         self.tasks = {}
         self.scheduler = sched.scheduler()
 
         logging.basicConfig(level=logging.INFO)
 
-    def use_module(self, name, cls, *, enabled_default=None):
+    def use_module(self, name, factory):
         if name in self.modules:
             raise ValueError(f"Module name {name!r} is already in use")
-        self.modules[name] = {
-            "class": cls,
-            "instance": None,
-            "config": {"_enabled": enabled_default},
-        }
+        self.modules[name] = AppModule(factory)
 
     def require_module(self, name):
-        if name in self.active_modules:
-            # returns None for circular dependencies
-            return self.modules[name]["instance"]
         if name not in self.modules:
             raise ValueError(f"Module {name!r} is missing")
-        if self.modules[name]["config"]["_enabled"] is False:
-            raise ValueError(f"Module {name!r} is disabled")
-        self.active_modules.add(name)
         mod = self.modules[name]
-        cfg = self.config.get(name, {})
-        inst = mod["instance"] = mod["class"](self, cfg)
-        return inst
+        if mod.active:
+            return mod.instance  # returns None for circular dependencies
+        if mod.enabled is False:
+            raise ValueError(f"Module {name!r} is disabled")
+        logging.info(f"App: starting module {name}")
+        mod.active = True
+        mod.instance = mod.factory(self, mod.config)
+        return mod.instance
 
     def add_task(self, name, func, interval_sec):
         if name in self.tasks:
@@ -72,21 +77,22 @@ class App:
         cfg = self.config = self.db_singleton("config")
         for name, mod in self.modules.items():
             if name in cfg:
-                mod["config"] |= cfg[name]
+                mod.config |= cfg[name]
+                mod.enabled = mod.config.get("_enabled")
 
     def start_modules(self):
         for name, mod in self.modules.items():
-            if mod["config"]["_enabled"] is True:
+            if mod.enabled is True:
                 self.require_module(name)
 
     def run_task(self, name):
         func, delay = self.tasks[name]
-        logging.info(f"Starting task {name!r}")
+        logging.info(f"App: starting task {name!r}")
         start = time.monotonic()
         try:
             func()
         except (AppError, AskfmApiError):
             logging.exception("run_task:")
         delta = time.monotonic() - start
-        logging.info(f"Finished task in {delta:.2f}s")
+        logging.info(f"App: finished task in {delta:.2f}s")
         self.scheduler.enter(delay, 0, self.run_task, (name,))

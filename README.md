@@ -36,24 +36,29 @@ Further configuration is stored in the database table `singletons` in the docume
 
 ```json
 {
-    "_id": "config",
-    "user_manager": {
-        "signing_key": "86A8...C416",
-        "test_mode": true,
-        "hashtag": "askfmforhumans",
-        "settings_header": "=AskfmForHumans="
-    },
-    "bot": {
-        "_enabled": true,
-        "username": "ask4humans",
-        "password": "12345"
-    }
+  "_id": "config",
+  "api_manager": {
+    "signing_key": "8648...C417"
+  },
+  "user_manager": {
+    "test_mode": true,
+    "hashtag": "askfmforhumans"
+    "settings_header": "=AskfmForHumans="
+  },
+  "user_worker": {
+    "_enabled": true
+  },
+  "bot": {
+    "_enabled": true,
+    "username": "ask4humans",
+    "password": "12345"
+  }
 }
 ```
 
-Config for each module lives in a separate sub-object. Every module can be enabled or disabled with the optional field `_enabled`. Some modules are enabled by default. Modules may also require and enable other modules, if they aren't explicitly disabled.
+Config for each application module lives in a separate sub-object. Every module can be enabled or disabled with the optional field `_enabled`. Modules may also require and enable other modules, if they aren't explicitly disabled.
 
-You can find modules and their config schemas in the source files ([\_\_main__.py](askfmforhumans/__main__.py), [user_manager.py](askfmforhumans/user_manager.py), [bot.py](askfmforhumans/bot.py)). 
+You can find modules and their config schemas in the source files (start with the list of all modules in [\_\_main__.py](askfmforhumans/__main__.py)). 
 
 ### Real-world usage experience
 
