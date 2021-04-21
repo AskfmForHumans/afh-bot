@@ -52,7 +52,7 @@ class Bot:
         self.api.request(
             r.send_question(
                 uname,
-                ui_strings.greet_user.format(full_name=user.profile["fullName"]),
+                ui_strings.greet_user.format(full_name=user.profile.full_name),
             )
         )
         user.model.greeted = True

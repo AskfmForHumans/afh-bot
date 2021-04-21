@@ -15,14 +15,16 @@ class UserWorker:
         self.app = app
         self.config = UserWorkerConfig.from_dict(config)
         self.umgr = app.require_module("user_manager")
-        app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
+        app.add_task(
+            "delete_shoutouts", self.shoutout_task, self.config.tick_interval_sec
+        )
 
-    def tick(self):
+    def shoutout_task(self):
         for user in self.umgr.users.values():
-            if user.active:
-                self.process_questions(user)
+            if user.active and user.settings.delete_shoutouts:
+                self.delete_shoutouts(user)
 
-    def process_questions(self, user):
+    def delete_shoutouts(self, user):
         for q in user.api.fetch_new_questions():
             if q["type"] in ("shoutout", "anonshoutout"):
                 qtype, qid, qtext = q["type"], q["qid"], q["body"]

@@ -7,4 +7,11 @@ format:
 export:
 	pdm export --prod -o requirements.txt
 
-.PHONY: lint format export
+outdated:
+	pdm update --dry-run --unconstrained
+
+update:
+	pdm update
+	$(MAKE) --no-print-directory export
+
+.PHONY: lint format export outdated

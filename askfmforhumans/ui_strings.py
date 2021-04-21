@@ -15,4 +15,7 @@ user_settings_map = {
     "стоп": "stop",
     "тест": "test",
     "автоблок": "autoblock",
+    "удалять_ш": "delete_shoutouts",
+    "да": True,
+    "нет": False,
 }
