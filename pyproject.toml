@@ -2,7 +2,7 @@
 license = {text = "MIT"}
 urls.homepage = "https://github.com/AskfmForHumans/afh-bot"
 dependencies = [
-    "askfm-api==0.2.0b1",
+    "askfm-api~=0.2.1",
     "pymongo[srv,tls]~=3.11",
 ]
 requires-python = ">=3.9"

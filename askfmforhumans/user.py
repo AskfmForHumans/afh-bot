@@ -17,6 +17,7 @@ class UserSettings(MyDataclass):
     test: bool = False
     autoblock: bool = False
     delete_shoutouts: bool = True
+    rescuing: bool = False
 
 
 class UserModel(MyDataclass):
@@ -116,10 +117,11 @@ class User:
         schema = UserSettings.__annotations__
         settings = {}
         for k, v in raw_settings.items():
+            k = k.lower()
             k = user_settings_map.get(k, k)
             vtype = schema.get(k)
             if vtype is bool:
-                v = v[-1]  # last seen wins
+                v = v[-1].lower()  # last seen wins
                 v = user_settings_map.get(v, v or True)  # '' means True
                 if isinstance(v, bool):
                     settings[k] = v
