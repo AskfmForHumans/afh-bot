@@ -36,6 +36,10 @@ class UserManager:
     # I can't quite figure out what the interface of this module should look like.
     # So let's just make things work.
 
+    @property
+    def active_users(self):
+        return [u for u in self.users.values() if u.active]
+
     def get_or_create_user(self, uname, **kwargs):
         if uname in self.users:
             return self.users[uname]

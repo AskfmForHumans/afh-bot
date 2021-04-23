@@ -31,7 +31,7 @@ class ApiManager:
 
     @cached_property
     def anon_api(self):
-        logging.info("API manager: creating anon API")
+        logging.debug("API manager: creating anon API")
         return self.create_api()
 
 

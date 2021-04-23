@@ -1,17 +1,121 @@
 import logging
+import re
 import time
 
 from askfmforhumans import ui_strings
 from askfmforhumans.api import requests as r
+from askfmforhumans.models import Question
+from askfmforhumans.user import FilterSchedule, ShoutoutsPolicy
 from askfmforhumans.util import MyDataclass
 
 SEC_IN_DAY = 60 * 60 * 24
 SEC_IN_YEAR = SEC_IN_DAY * 365
 
+# Note: ASKfm threads are complex, so this module ignores them for now
+
 
 class UserWorkerConfig(MyDataclass):
-    cleaning_interval: int = 30
-    rescuing_interval: int = SEC_IN_DAY
+    short_interval: int = 30
+    long_interval: int = SEC_IN_DAY
+
+
+class Handler:
+    def __init__(self, worker):
+        self.worker = worker
+
+    def task_matches_schedule(self, user):
+        sch = user.settings.filter_schedule
+        tt = self.worker.current_task
+        return (sch, tt) in (
+            (FilterSchedule.CONTINUOUS, "short"),
+            (FilterSchedule.DAILY, "long"),
+        )
+
+    def enabled_for(self, user):
+        raise NotImplementedError
+
+    def handle_question(self, user, q):
+        raise NotImplementedError
+
+
+class ShoutoutHandler(Handler):
+    def enabled_for(self, user):
+        return (
+            user.settings.shoutouts_policy >= ShoutoutsPolicy.DELETE
+            and self.task_matches_schedule(user)
+        )
+
+    def handle_question(self, user, q):
+        if not q.is_shoutout or (not q.is_anon and user.settings.filter_anon_only):
+            return False
+        # Logging shoutout bodies is ok since they aren't private by definition
+        logging.info(f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {q.body=}")
+        self.worker.delete_question(
+            user, q, block=user.settings.shoutouts_policy is ShoutoutsPolicy.BLOCK
+        )
+        return True
+
+
+class TextFilterHandler(Handler):
+    def enabled_for(self, user):
+        return (
+            user.settings.filters_str or user.settings.filters_re
+        ) and self.task_matches_schedule(user)
+
+    def handle_question(self, user, q):
+        if not q.is_regular or (not q.is_anon and user.settings.filter_anon_only):
+            return False
+        matched_filter = None
+        lower_body = q.body.lower()
+        for s in user.settings.filters_str:
+            if s.lower() in lower_body:
+                matched_filter = s
+                break
+        else:
+            for p in user.settings.filters_re:
+                if re.search(p, q.body):
+                    matched_filter = p
+                    break
+        if matched_filter:
+            logging.info(
+                f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {matched_filter=}"
+            )
+            self.worker.delete_question(
+                user, q, block=user.settings.filter_block_authors
+            )
+            return True
+        return False
+
+
+class StaleFilterHandler(Handler):
+    def enabled_for(self, user):
+        return user.settings.delete_after != 0 and self.worker.current_task == "long"
+
+    def handle_question(self, user, q):
+        if not q.is_regular or (not q.is_anon and user.settings.filter_anon_only):
+            return False
+        threshold = user.settings.delete_after
+        if time.time() - q.updated_at > threshold * SEC_IN_DAY:
+            ts = time.asctime(time.gmtime(q.updated_at))
+            logging.info(f"Got {q.type}:{q.id} for {user.uname}: {ts=} {threshold=}")
+            self.worker.delete_question(user, q)
+            return True
+        return False
+
+
+class RescueHandler(Handler):
+    def enabled_for(self, user):
+        return user.settings.rescue and self.worker.current_task == "long"
+
+    def handle_question(self, user, q):
+        if not q.is_regular:
+            return False
+        if time.time() - q.updated_at > SEC_IN_YEAR:
+            ts = time.asctime(time.gmtime(q.updated_at))
+            logging.info(f"Got {q.type}:{q.id} for {user.uname}: {ts=}")
+            self.worker.rescue_question(user, q)
+            return True
+        return False
 
 
 class UserWorker:
@@ -22,51 +126,63 @@ class UserWorker:
         self.config = UserWorkerConfig.from_dict(config)
         self.umgr = app.require_module("user_manager")
         app.add_task(
-            f"{self.MOD_NAME}:cleaning",
-            self.cleaning_task,
-            self.config.cleaning_interval,
+            f"{self.MOD_NAME}:short",
+            self.short_task,
+            self.config.short_interval,
         )
         app.add_task(
-            f"{self.MOD_NAME}:rescuing",
-            self.rescuing_task,
-            self.config.rescuing_interval,
+            f"{self.MOD_NAME}:long",
+            self.long_task,
+            self.config.long_interval,
         )
+        self.handlers = [
+            ShoutoutHandler(self),
+            TextFilterHandler(self),
+            StaleFilterHandler(self),
+            RescueHandler(self),
+        ]
+        self.current_task = None
 
-    def cleaning_task(self):
-        for user in self.umgr.users.values():
-            if user.active and user.settings.delete_shoutouts:
-                self.delete_shoutouts(user)
+    def short_task(self):
+        self.current_task = "short"
+        for user in self.umgr.active_users:
+            self.run_handlers(user)
 
-    def rescuing_task(self):
-        for user in self.umgr.users.values():
-            if user.active and user.settings.rescuing:
-                self.rescue_questions(user)
+    def long_task(self):
+        self.current_task = "long"
+        for user in self.umgr.active_users:
+            self.run_handlers(user)
 
-    def delete_shoutouts(self, user):
-        for q in user.api.fetch_new_questions():
-            if q["type"] in ("shoutout", "anonshoutout"):
-                qtype, qid, qtext = q["type"], q["qid"], q["body"]
-                qfrom = " from " + q["author"] if q["author"] else ""
-                # Logging shoutout bodies is ok since they aren't private by definition
-                logging.info(f"Got {qtype}:{qid} for {user.uname}{qfrom}: {qtext}")
+    def run_handlers(self, user):
+        handlers = [h for h in self.handlers if h.enabled_for(user)]
+        if not handlers:
+            return
 
-                if user.settings.autoblock:
-                    logging.info(f"Deleting {qid} and blocking its author")
-                    user.api.request(r.report_question(qid, should_block=True))
-                else:
-                    logging.info(f"Deleting {qid}")
-                    user.api.request(r.delete_question(qtype, qid))
+        if self.current_task == "short":
+            qs = user.api.fetch_new_questions()
+        else:
+            qs = user.api.request_iter(r.fetch_questions())
 
-        user.api.request(r.mark_notifs_as_read("SHOUTOUT"))
+        for q in qs:
+            q = Question.from_api_obj(q)
+            for h in handlers:
+                if h.handle_question(user, q):
+                    break
 
-    def rescue_questions(self, user):
-        for q in user.api.request_iter(r.fetch_questions()):
-            qid, qtype, qts = q["qid"], q["type"], q["updatedAt"]
-            # threads are more complex, ignore them for now
-            if qtype != "thread" and time.time() - qts > SEC_IN_YEAR:
-                qts = time.asctime(time.gmtime(qts))
-                logging.info(
-                    f"Rescuing {qtype}:{qid} for {user.uname} updated at {qts}"
-                )
-                user.api.request(r.post_answer(qtype, qid, ui_strings.rescuing_answer))
-                user.api.request(r.delete_answer(qid))
+        if user.settings.shoutouts_policy >= ShoutoutsPolicy.READ:
+            # Should we do this in a short task with no handlers?
+            # Currently we return early.
+            user.api.request(r.mark_notifs_as_read("SHOUTOUT"))
+
+    def delete_question(self, user, q, *, block=False):
+        if block:
+            logging.info(f"Deleting {q.id} and blocking {q.author}")
+            user.api.request(r.report_question(q.id, should_block=True))
+        else:
+            logging.info(f"Deleting {q.id}")
+            user.api.request(r.delete_question(q.type, q.id))
+
+    def rescue_question(self, user, q):
+        logging.info(f"Rescuing {q.id}")
+        user.api.request(r.post_answer(q.type, q.id, ui_strings.rescuing_answer))
+        user.api.request(r.delete_answer(q.id))

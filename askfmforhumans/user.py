@@ -1,23 +1,10 @@
-from collections import defaultdict
+from dataclasses import field
+from enum import Enum, IntEnum
 import logging
 
+from askfmforhumans.models import UserProfile
 from askfmforhumans.ui_strings import user_settings_map
 from askfmforhumans.util import MyDataclass
-
-
-class UserProfile(MyDataclass):
-    full_name: str
-    bio: str
-    hashtags: list[str]
-    raw_settings: dict
-
-
-class UserSettings(MyDataclass):
-    stop: bool = False
-    test: bool = False
-    autoblock: bool = False
-    delete_shoutouts: bool = True
-    rescuing: bool = False
 
 
 class UserModel(MyDataclass):
@@ -29,6 +16,58 @@ class UserModel(MyDataclass):
     password: str = None
 
 
+class FilterSchedule(Enum):
+    ON_DEMAND = 1
+    DAILY = 2
+    CONTINUOUS = 3
+
+
+class ShoutoutsPolicy(IntEnum):
+    NONE = 1
+    READ = 2
+    DELETE = 3
+    BLOCK = 4
+
+
+class UserSettings(MyDataclass):
+    stop: bool = False
+    test: bool = False
+    rescue: bool = False
+    delete_after: int = 0
+    filter_block_authors: bool = False
+    filter_anon_only: bool = False
+    filters_str: list[str] = field(default_factory=list)
+    filters_re: list[str] = field(default_factory=list)
+    shoutouts_policy: ShoutoutsPolicy = ShoutoutsPolicy.DELETE
+    filter_schedule: FilterSchedule = FilterSchedule.CONTINUOUS
+
+    @staticmethod
+    def from_raw(raw, /):
+        schema = UserSettings.__annotations__
+        res = UserSettings()
+        for k, v in raw:
+            k = k.lower()
+            k = user_settings_map.get(k, k)
+            vtype = schema.get(k)
+            if vtype is bool:
+                v = v.lower()
+                v = user_settings_map.get(v, v or True)  # '' means True
+                if isinstance(v, bool):
+                    setattr(res, k, v)
+            elif vtype is int:
+                if v.isascii() and v.isdigit():
+                    setattr(res, k, int(v))
+            elif vtype == list[str]:
+                if v:
+                    getattr(res, k).append(v)
+            elif isinstance(vtype, type) and issubclass(vtype, Enum):
+                v = v.lower()
+                v = user_settings_map.get(v, v)
+                if v in vtype.__members__:
+                    setattr(res, k, vtype[v])
+        return res
+
+
 class User:
     def __init__(self, uname, mgr):
         self.uname = uname
@@ -36,6 +75,7 @@ class User:
         self.model = UserModel()
         self.settings = UserSettings()
         self.profile = None
+        self.raw_settings = None
         self.api = mgr.api_manager.create_api(auto_refresh_session=False)
 
     @property
@@ -85,45 +125,20 @@ class User:
         self.model = UserModel.from_dict(model)
 
     def set_profile(self, profile):
-        bio = profile["bio"].replace("\r\n", "\n")
-        raw_settings = self.extract_settings(bio)
-        profile = UserProfile(
-            full_name=profile["fullName"],
-            bio=bio,
-            hashtags=profile["hashtags"],
-            raw_settings=raw_settings,
-        )
-        if self.profile == profile:
-            return
-
-        self.profile = profile
-        settings = UserSettings.from_dict(self.normalize_settings(raw_settings))
-        self.settings = settings
+        old_allowed = self.allowed
+        self.profile = UserProfile.from_api_obj(profile)
+        raw_settings = self.extract_settings(self.profile.bio)
+        if self.raw_settings != raw_settings:
+            self.raw_settings = raw_settings
+            self.settings = settings = UserSettings.from_raw(raw_settings)
+            logging.info(f"User {self.uname}: {settings=} {raw_settings=}")
         allowed = self.allowed
-        logging.info(f"User {self.uname}: {allowed=} {settings=} {raw_settings=}")
+        if allowed != old_allowed:
+            logging.info(f"User {self.uname}: {allowed=}")
 
     def extract_settings(self, bio):
         header = self.mgr.config.settings_header
-        settings = defaultdict(list)
         bio = "\n" + bio
         lines = bio.partition(f"\n{header}\n")[2].splitlines()
-        for line in lines:
-            parts = line.partition("=")
-            k, v = parts[0].strip(), parts[2].strip()
-            settings[k].append(v)
-        return dict(**settings)  # to avoid issues with e.g. printing
-
-    def normalize_settings(self, raw_settings):
-        schema = UserSettings.__annotations__
-        settings = {}
-        for k, v in raw_settings.items():
-            k = k.lower()
-            k = user_settings_map.get(k, k)
-            vtype = schema.get(k)
-            if vtype is bool:
-                v = v[-1].lower()  # last seen wins
-                v = user_settings_map.get(v, v or True)  # '' means True
-                if isinstance(v, bool):
-                    settings[k] = v
-            # TBC
-        return settings
+        parts = [l.partition("=") for l in lines if l]
+        return [(p[0].strip(), p[2].strip()) for p in parts]

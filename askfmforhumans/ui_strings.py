@@ -14,11 +14,28 @@ login_failed = """\
 Проверь пароль и попробуй ещё раз, солнышко^^"""
 
 user_settings_map = {
-    "стоп": "stop",
-    "тест": "test",
-    "автоблок": "autoblock",
-    "удалять_ш": "delete_shoutouts",
-    "спасать_вопросы": "rescuing",
     "да": True,
     "нет": False,
+    #
+    "стоп_машина": "stop",
+    "яумамытестировщик": "test",
+    #
+    "спасать_старые_вопросы": "rescue",
+    "удалять_вопросы_старше_N_дней": "delete_after",
+    #
+    "фильтр_блок_авторов": "filter_block_authors",
+    "фильтр_только_анон": "filter_anon_only",
+    "фильтр": "filters_str",
+    "фильтр_рв": "filters_re",
+    #
+    "шаутауты": "shoutouts_policy",
+    "блокировать": "BLOCK",
+    "удалять": "DELETE",
+    "читать": "READ",
+    "ничего": "NONE",
+    #
+    "режим_чистки": "filter_schedule",
+    "непрерывно": "CONTINUOUS",
+    "ежедневно": "DAILY",
+    "по_запросу": "ON_DEMAND",
 }
