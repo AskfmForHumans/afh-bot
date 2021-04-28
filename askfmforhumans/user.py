@@ -100,14 +100,6 @@ class User:
     def pre_sync(self):
         self.model.access_token = self.api.access_token
 
-    def post_sync(self):
-        api, model = self.api, self.model
-        api.device_id = model.device_id or api.device_id
-        api.auth = (self.uname, model.password) if model.password else None
-        api.access_token = model.access_token or api.access_token
-        if self.allowed:
-            self.try_auth()
-
     def try_auth(self):
         api = self.api
         if not api.logged_in:
@@ -122,7 +114,11 @@ class User:
         return True
 
     def set_model(self, model):
-        self.model = UserModel.from_dict(model)
+        model = self.model = UserModel.from_dict(model)
+        api = self.api
+        api.device_id = model.device_id or api.device_id
+        api.auth = (self.uname, model.password) if model.password else None
+        api.access_token = model.access_token or api.access_token
 
     def set_profile(self, profile):
         old_allowed = self.allowed

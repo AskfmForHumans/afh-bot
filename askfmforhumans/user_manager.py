@@ -1,6 +1,5 @@
+from dataclasses import field
 import logging
-
-from pymongo.collection import ReturnDocument
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.api import requests as r
@@ -12,9 +11,11 @@ DEFAULT_CREATED_BY = "app"
 
 class UserManagerConfig(MyDataclass):
     settings_header: str
-    test_mode: bool = False
-    hashtag: str = None
     require_hashtag: bool = True
+    hashtag: str = None
+    test_mode: bool = False
+    sync_users: bool = True
+    users: dict = field(default_factory=dict)
     tick_interval_sec: int = 30
 
 
@@ -26,21 +27,29 @@ class UserManager:
         self.config = UserManagerConfig.from_dict(config)
         if test_mode := self.config.test_mode:
             logging.warning(f"User manager: {test_mode=}")
-        self.api_manager = app.require_module("api_manager")
-        app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
 
+        if self.config.sync_users:
+            self.db = app.require_module("data_manager").db_collection("users")
+            if not self.db:
+                raise AssertionError("User manager: no DB connection, can't sync")
+
+        if self.config.require_hashtag and not self.config.hashtag:
+            raise AssertionError("User manager: no hashtag provided")
+
+        self.api_manager = app.require_module("api_manager")
         self.users = {}
         self._old_models = {}
-        self.db = app.db_collection("users")
 
-    # I can't quite figure out what the interface of this module should look like.
-    # So let's just make things work.
+        for uname, model in self.config.users.items():
+            self.get_or_create_user(uname, model)
+
+        app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
 
     @property
     def active_users(self):
         return [u for u in self.users.values() if u.active]
 
-    def get_or_create_user(self, uname, **kwargs):
+    def get_or_create_user(self, uname, model):
         if uname in self.users:
             return self.users[uname]
 
@@ -48,19 +57,37 @@ class UserManager:
         model = {
             "created_by": DEFAULT_CREATED_BY,
             "device_id": ExtendedApi.random_device_id(),
-            **kwargs,
+            **model,
         }
         user.set_model(model)
         logging.info(f"Created user {uname}: {model=}")
 
-        remote_model = self.db.find_one({"uname": uname}) or {}
-        self.sync_user(user, remote_model)
+        if self.config.sync_users:
+            remote_model = self.db.find_one({"uname": uname}) or {}
+            self.sync_user(user, remote_model)
+
+        self.update_user(user)
         return user
 
+    def tick(self):
+        if self.config.sync_users:
+            self.sync_users()
+        for user in self.users.values():
+            self.update_user(user)
+
+    def sync_users(self):
+        remote_models = {u["uname"]: u for u in self.db.find()}
+        all_unames = set(remote_models) | set(self.users)
+        for uname in all_unames:
+            if uname not in self.users:
+                self.users[uname] = User(uname, self)
+            user = self.users[uname]
+            self.sync_user(user, remote_models.get(uname, {}))
+
     def sync_user(self, user, remote_model):
-        user.pre_sync()
         uname = user.uname
         old_model = self._old_models.get(uname, {})
+        user.pre_sync()
 
         # remote -> local sync
         upd_remote = {k: v for k, v in remote_model.items() if old_model.get(k) != v}
@@ -78,15 +105,10 @@ class UserManager:
         if upd_remote or upd_local:
             logging.info(f"User sync: {uname=} {upd_remote=} {upd_local=}")
 
+    def update_user(self, user):
         if not user.model.ignored:
-            user.set_profile(self.api_manager.anon_api.request(r.fetch_profile(uname)))
-        user.post_sync()
-
-    def tick(self):
-        remote_models = {u["uname"]: u for u in self.db.find()}
-        all_unames = set(remote_models) | set(self.users)
-        for uname in all_unames:
-            if uname not in self.users:
-                self.users[uname] = User(uname, self)
-            user = self.users[uname]
-            self.sync_user(user, remote_models.get(uname, {}))
+            user.set_profile(
+                self.api_manager.anon_api.request(r.fetch_profile(user.uname))
+            )
+            if user.allowed:
+                user.try_auth()

@@ -98,7 +98,7 @@ summary = "Python driver for MongoDB <http://www.mongodb.org>"
 dependencies = [
     "dnspython<1.17.0,>=1.16.0",
     "ipaddress",
-    "pymongo~=3.11",
+    "pymongo==3.11.3",
 ]
 
 [[package]]
@@ -121,7 +121,7 @@ dependencies = [
 
 [[package]]
 name = "toml"
-sections = ["dev"]
+sections = ["default", "dev"]
 version = "0.10.2"
 summary = "Python Library for Tom's Obvious, Minimal Language"
 
@@ -145,7 +145,7 @@ summary = "HTTP library with thread-safe connection pooling, file post, and more
 
 [metadata]
 lock_version = "2"
-content_hash = "sha256:8caa39de348c51668e55eada4d5d0e89e301dafe172d5e9782cf5e6a3dec7b5a"
+content_hash = "sha256:33345244f82950101110c388be98439e9c8ec010cdcf2e5256d8ecc7018b27b6"
 
 [metadata.files]
 "appdirs 1.4.4" = [

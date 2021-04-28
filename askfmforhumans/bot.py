@@ -10,7 +10,6 @@ CREATED_BY = "discovery_hashtag"
 
 class BotConfig(MyDataclass):
     username: str
-    password: str = None
     search_by_hashtag: bool = True
     greet_users: bool = True
     tick_interval_sec: int = 30
@@ -25,9 +24,7 @@ class Bot:
         self.umgr = app.require_module("user_manager")
         app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
 
-        self.user = self.umgr.get_or_create_user(
-            self.config.username, password=self.config.password
-        )
+        self.user = self.umgr.get_or_create_user(self.config.username, {})
         self.api = self.user.api
 
     def tick(self):
@@ -42,7 +39,7 @@ class Bot:
         ):
             uname = user["uid"]
             if uname not in self.umgr.users:
-                user = self.umgr.get_or_create_user(uname, created_by=CREATED_BY)
+                user = self.umgr.get_or_create_user(uname, {"created_by": CREATED_BY})
                 if self.config.greet_users and user.allowed:
                     self.greet_user(user)
 

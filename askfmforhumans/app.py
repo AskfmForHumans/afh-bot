@@ -1,11 +1,8 @@
 from dataclasses import field
 import logging
-import os
 import sched
 import time
 from typing import Any, Callable, Optional
-
-from pymongo import MongoClient
 
 from askfmforhumans.api import AskfmApiError
 from askfmforhumans.errors import AppError
@@ -22,13 +19,9 @@ class AppModule(MyDataclass):
 
 class App:
     def __init__(self):
-        self.config = None
-        self.db = None
         self.modules = {}
         self.tasks = {}
         self.scheduler = sched.scheduler()
-
-        logging.basicConfig(level=logging.INFO)
 
     def use_module(self, name, factory):
         if name in self.modules:
@@ -54,36 +47,20 @@ class App:
         self.tasks[name] = func, interval_sec
         self.scheduler.enter(0, 0, self.run_task, (name,))
 
-    def start(self):
-        self.init_db()
-        self.init_config()
-        self.start_modules()
-        self.scheduler.run()
-
-    def init_db(self):
-        assert (
-            "MONGODB_URL" in os.environ
-        ), "Required env variable MONGODB_URL is missing"
-        client = MongoClient(os.environ["MONGODB_URL"])
-        self.db = client.get_default_database()
-
-    def db_collection(self, name):
-        return self.db.get_collection(name)
-
-    def db_singleton(self, name):
-        return self.db_collection("singletons").find_one({"_id": name})
-
-    def init_config(self):
-        cfg = self.config = self.db_singleton("config")
+    def init_config(self, config):
         for name, mod in self.modules.items():
-            if name in cfg:
-                mod.config |= cfg[name]
+            if name in config:
+                mod.config |= config[name]
                 mod.enabled = mod.config.get("_enabled")
 
-    def start_modules(self):
+    def init_modules(self):
         for name, mod in self.modules.items():
             if mod.enabled is True:
                 self.require_module(name)
+
+    def run(self):
+        self.scheduler.run()
+        logging.warning("No tasks to run. Stopping the app.")
 
     def run_task(self, name):
         func, delay = self.tasks[name]
