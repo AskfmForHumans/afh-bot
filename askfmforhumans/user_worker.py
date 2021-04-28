@@ -5,7 +5,7 @@ import time
 from askfmforhumans import ui_strings
 from askfmforhumans.api import requests as r
 from askfmforhumans.models import Question
-from askfmforhumans.user import FilterSchedule, ShoutoutsPolicy
+from askfmforhumans.user import FilterSchedule
 from askfmforhumans.util import MyDataclass
 
 SEC_IN_DAY = 60 * 60 * 24
@@ -40,19 +40,14 @@ class Handler:
 
 class ShoutoutHandler(Handler):
     def enabled_for(self, user):
-        return (
-            user.settings.shoutouts_policy >= ShoutoutsPolicy.DELETE
-            and self.task_matches_schedule(user)
-        )
+        return user.settings.delete_shoutouts and self.task_matches_schedule(user)
 
     def handle_question(self, user, q):
         if not q.is_shoutout or (not q.is_anon and user.settings.filter_anon_only):
             return False
         # Logging shoutout bodies is ok since they aren't private by definition
         logging.info(f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {q.body=}")
-        self.worker.delete_question(
-            user, q, block=user.settings.shoutouts_policy is ShoutoutsPolicy.BLOCK
-        )
+        self.worker.delete_question(user, q, block=user.settings.filter_block_authors)
         return True
 
 
@@ -147,6 +142,8 @@ class UserWorker:
         self.current_task = "short"
         for user in self.umgr.active_users:
             self.run_handlers(user)
+            if user.settings.read_shoutouts:
+                user.api.request(r.mark_notifs_as_read("SHOUTOUT"))
 
     def long_task(self):
         self.current_task = "long"
@@ -168,11 +165,6 @@ class UserWorker:
             for h in handlers:
                 if h.handle_question(user, q):
                     break
-
-        if user.settings.shoutouts_policy >= ShoutoutsPolicy.READ:
-            # Should we do this in a short task with no handlers?
-            # Currently we return early.
-            user.api.request(r.mark_notifs_as_read("SHOUTOUT"))
 
     def delete_question(self, user, q, *, block=False):
         if block:

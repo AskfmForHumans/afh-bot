@@ -23,16 +23,13 @@ user_settings_map = {
     "спасать_старые_вопросы": "rescue",
     "удалять_вопросы_старше_N_дней": "delete_after",
     #
-    "фильтр_блок_авторов": "filter_block_authors",
-    "фильтр_только_анон": "filter_anon_only",
     "фильтр": "filters_str",
     "фильтр_рв": "filters_re",
+    "читать_шаутауты": "read_shoutouts",
+    "удалять_шаутауты": "delete_shoutouts",
     #
-    "шаутауты": "shoutouts_policy",
-    "блокировать": "BLOCK",
-    "удалять": "DELETE",
-    "читать": "READ",
-    "ничего": "NONE",
+    "фильтр_блок_авторов": "filter_block_authors",
+    "фильтр_только_анон": "filter_anon_only",
     #
     "режим_чистки": "filter_schedule",
     "непрерывно": "CONTINUOUS",

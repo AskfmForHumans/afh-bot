@@ -1,5 +1,5 @@
 from dataclasses import field
-from enum import Enum, IntEnum
+from enum import Enum
 import logging
 
 from askfmforhumans.models import UserProfile
@@ -22,24 +22,18 @@ class FilterSchedule(Enum):
     CONTINUOUS = 3
 
 
-class ShoutoutsPolicy(IntEnum):
-    NONE = 1
-    READ = 2
-    DELETE = 3
-    BLOCK = 4
-
-
 class UserSettings(MyDataclass):
     stop: bool = False
     test: bool = False
-    rescue: bool = False
+    rescue: bool = True
     delete_after: int = 0
-    filter_block_authors: bool = False
-    filter_anon_only: bool = False
     filters_str: list[str] = field(default_factory=list)
     filters_re: list[str] = field(default_factory=list)
-    shoutouts_policy: ShoutoutsPolicy = ShoutoutsPolicy.DELETE
-    filter_schedule: FilterSchedule = FilterSchedule.CONTINUOUS
+    read_shoutouts: bool = True
+    delete_shoutouts: bool = True
+    filter_block_authors: bool = False
+    filter_anon_only: bool = False
+    filter_schedule: FilterSchedule = FilterSchedule.DAILY
 
     @staticmethod
     def from_raw(raw, /):
