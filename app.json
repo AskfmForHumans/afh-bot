@@ -3,7 +3,7 @@
     "description": "Multifunctional bot intended to mend some of ASKfm's screwups",
     "repository": "https://github.com/AskfmForHumans/afh-bot",
     "env": {
-        "MONGODB_URL": {
+        "AFH_DB_URL": {
             "description": "URL for MongoDB connection"
         }
     },
