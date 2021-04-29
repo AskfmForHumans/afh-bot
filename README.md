@@ -37,15 +37,15 @@ The program reads the path to this file from the environment variable `AFH_CONFI
 Here's an example config:
 
 ```toml
-[api_manager]
+[api_mgr]
 signing_key = "8648...C417"
 
-[user_manager]
+[user_mgr]
 test_mode = true
 hashtag = "askfmforhumans"
 settings_header = "=AskfmForHumans="
 
-[user_manager.users]
+[user_mgr.users]
 ask4humans = {password = "12345"}
 
 [user_worker]
@@ -56,9 +56,9 @@ _enabled = true
 username = "ask4humans"
 ```
 
-Config for each application module lives in a separate sub-object. You can find modules and their config schemas in the source files (start with the list of all modules in [\_\_main__.py](askfmforhumans/__main__.py)).
+Each section (known in TOML as *table*) defines settings for a different app module. You can find modules and their config schemas in the source files (start with the list of all modules in [\_\_main__.py](askfmforhumans/__main__.py)).
 
-The app will start every module that has `_enabled = true` in the config and all its dependencies.
+The app will start every module that has `_enabled = true` in the config along with all its dependencies.
 
 ### Database
 

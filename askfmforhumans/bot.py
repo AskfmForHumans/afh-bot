@@ -1,5 +1,3 @@
-import logging
-
 from askfmforhumans import ui_strings
 from askfmforhumans.api import requests as r
 from askfmforhumans.errors import AppError
@@ -16,13 +14,11 @@ class BotConfig(MyDataclass):
 
 
 class Bot:
-    MOD_NAME = "bot"
-
-    def __init__(self, app, config):
-        self.app = app
-        self.config = BotConfig.from_dict(config)
-        self.umgr = app.require_module("user_manager")
-        app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
+    def __init__(self, am):
+        self.logger = am.logger
+        self.config = BotConfig.from_dict(am.config)
+        self.umgr = am.require_module("user_mgr")
+        am.add_job("tick", self.tick, self.config.tick_interval_sec)
 
         self.user = self.umgr.get_or_create_user(self.config.username, {})
         self.api = self.user.api
@@ -45,7 +41,7 @@ class Bot:
 
     def greet_user(self, user):
         uname = user.uname
-        logging.info(f"Greeting {uname}")
+        self.logger.info(f"Greeting {uname}")
         self.api.request(
             r.send_question(
                 uname,

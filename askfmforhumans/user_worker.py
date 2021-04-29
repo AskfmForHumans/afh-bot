@@ -1,4 +1,3 @@
-import logging
 import re
 import time
 
@@ -46,7 +45,9 @@ class ShoutoutHandler(Handler):
         if not q.is_shoutout or (not q.is_anon and user.settings.filter_anon_only):
             return False
         # Logging shoutout bodies is ok since they aren't private by definition
-        logging.info(f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {q.body=}")
+        self.worker.logger.info(
+            f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {q.body=}"
+        )
         self.worker.delete_question(user, q, block=user.settings.filter_block_authors)
         return True
 
@@ -72,7 +73,7 @@ class TextFilterHandler(Handler):
                     matched_filter = p
                     break
         if matched_filter:
-            logging.info(
+            self.worker.logger.info(
                 f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {matched_filter=}"
             )
             self.worker.delete_question(
@@ -92,7 +93,9 @@ class StaleFilterHandler(Handler):
         threshold = user.settings.delete_after
         if time.time() - q.updated_at > threshold * SEC_IN_DAY:
             ts = time.asctime(time.gmtime(q.updated_at))
-            logging.info(f"Got {q.type}:{q.id} for {user.uname}: {ts=} {threshold=}")
+            self.worker.logger.info(
+                f"Got {q.type}:{q.id} for {user.uname}: {ts=} {threshold=}"
+            )
             self.worker.delete_question(user, q)
             return True
         return False
@@ -107,29 +110,19 @@ class RescueHandler(Handler):
             return False
         if time.time() - q.updated_at > SEC_IN_YEAR:
             ts = time.asctime(time.gmtime(q.updated_at))
-            logging.info(f"Got {q.type}:{q.id} for {user.uname}: {ts=}")
+            self.worker.logger.info(f"Got {q.type}:{q.id} for {user.uname}: {ts=}")
             self.worker.rescue_question(user, q)
             return True
         return False
 
 
 class UserWorker:
-    MOD_NAME = "user_worker"
-
-    def __init__(self, app, config):
-        self.app = app
-        self.config = UserWorkerConfig.from_dict(config)
-        self.umgr = app.require_module("user_manager")
-        app.add_task(
-            f"{self.MOD_NAME}:short",
-            self.short_task,
-            self.config.short_interval,
-        )
-        app.add_task(
-            f"{self.MOD_NAME}:long",
-            self.long_task,
-            self.config.long_interval,
-        )
+    def __init__(self, am):
+        self.logger = am.logger
+        self.config = UserWorkerConfig.from_dict(am.config)
+        self.umgr = am.require_module("user_mgr")
+        am.add_job("short", self.short_task, self.config.short_interval)
+        am.add_job("long", self.long_task, self.config.long_interval)
         self.handlers = [
             ShoutoutHandler(self),
             TextFilterHandler(self),
@@ -168,13 +161,13 @@ class UserWorker:
 
     def delete_question(self, user, q, *, block=False):
         if block:
-            logging.info(f"Deleting {q.id} and blocking {q.author}")
+            self.logger.info(f"Deleting {q.id} and blocking {q.author}")
             user.api.request(r.report_question(q.id, should_block=True))
         else:
-            logging.info(f"Deleting {q.id}")
+            self.logger.info(f"Deleting {q.id}")
             user.api.request(r.delete_question(q.type, q.id))
 
     def rescue_question(self, user, q):
-        logging.info(f"Rescuing {q.id}")
+        self.logger.info(f"Rescuing {q.id}")
         user.api.request(r.post_answer(q.type, q.id, ui_strings.rescuing_answer))
         user.api.request(r.delete_answer(q.id))

@@ -1,5 +1,4 @@
 from dataclasses import field
-import logging
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.api import requests as r
@@ -20,30 +19,28 @@ class UserManagerConfig(MyDataclass):
 
 
 class UserManager:
-    MOD_NAME = "user_manager"
-
-    def __init__(self, app, config):
-        self.app = app
-        self.config = UserManagerConfig.from_dict(config)
+    def __init__(self, am):
+        self.logger = am.logger
+        self.config = UserManagerConfig.from_dict(am.config)
         if test_mode := self.config.test_mode:
-            logging.warning(f"User manager: {test_mode=}")
+            self.logger.warning(f"{test_mode=}")
 
         if self.config.sync_users:
-            self.db = app.require_module("data_manager").db_collection("users")
+            self.db = am.require_module("data_mgr").db_collection("users")
             if not self.db:
                 raise AssertionError("User manager: no DB connection, can't sync")
 
         if self.config.require_hashtag and not self.config.hashtag:
             raise AssertionError("User manager: no hashtag provided")
 
-        self.api_manager = app.require_module("api_manager")
+        self.api_manager = am.require_module("api_mgr")
         self.users = {}
         self._old_models = {}
 
         for uname, model in self.config.users.items():
             self.get_or_create_user(uname, model)
 
-        app.add_task(self.MOD_NAME, self.tick, self.config.tick_interval_sec)
+        am.add_job("tick", self.tick, self.config.tick_interval_sec)
 
     @property
     def active_users(self):
@@ -60,7 +57,7 @@ class UserManager:
             **model,
         }
         user.set_model(model)
-        logging.info(f"Created user {uname}: {model=}")
+        self.logger.info(f"Created user {uname}: {model=}")
 
         if self.config.sync_users:
             remote_model = self.db.find_one({"uname": uname}) or {}
@@ -103,7 +100,7 @@ class UserManager:
             self.db.update_one(query, update, upsert=True)
 
         if upd_remote or upd_local:
-            logging.info(f"User sync: {uname=} {upd_remote=} {upd_local=}")
+            self.logger.info(f"User sync: {uname=} {upd_remote=} {upd_local=}")
 
     def update_user(self, user):
         if not user.model.ignored:

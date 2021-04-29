@@ -1,6 +1,5 @@
 from functools import cached_property, lru_cache
 from itertools import takewhile
-import logging
 
 from askfm_api import AskfmApi, AskfmApiError, requests
 
@@ -15,15 +14,15 @@ class ApiManagerConfig(MyDataclass):
 
 
 class ApiManager:
-    MOD_NAME = "api_manager"
-
-    def __init__(self, app, config):
-        self.config = ApiManagerConfig.from_dict(config)
+    def __init__(self, am):
+        self.logger = am.logger
+        self.config = ApiManagerConfig.from_dict(am.config)
         if dry_mode := self.config.dry_mode:
-            logging.warning(f"API manager: {dry_mode=}")
+            self.logger.warning(f"{dry_mode=}")
 
     def create_api(self, **kwargs):
         return ExtendedApi(
+            self.logger,
             self.config.signing_key,
             dry_mode=self.config.dry_mode,
             **kwargs,
@@ -31,13 +30,13 @@ class ApiManager:
 
     @cached_property
     def anon_api(self):
-        logging.debug("API manager: creating anon API")
         return self.create_api()
 
 
 class ExtendedApi(AskfmApi):
-    def __init__(self, *args, dry_mode=False, **kwargs):
+    def __init__(self, logger, *args, dry_mode=False, **kwargs):
         # super().__init__() calls request(), so this should come before.
+        self.logger = logger
         self.dry_mode = dry_mode
         super().__init__(*args, **kwargs)
 
@@ -49,7 +48,9 @@ class ExtendedApi(AskfmApi):
     def request(self, req, **kwargs):
         if not self.dry_mode or req.method == "GET" or req.name == "log_in":
             return super().request(req, **kwargs)
-        logging.info(f"Dry mode: ignoring {req.method} to {req.path}")
+        self.logger.info(
+            f"Dry mode: ignoring {req.method=} {req.path=} {req.params=}"
+        )
         return {}
 
     def fetch_new_questions(self):
@@ -59,15 +60,16 @@ class ExtendedApi(AskfmApi):
         The daily question is always included (if it exists).
         The cache is bounded, thus it may "forget" seen questions in rare occasions.
         """
-        hits, misses, *_ = self._q_reqid.cache_info()
-        logging.debug(
-            f"fetch_new_questions(): {self._reqid=}, {self._new_qs=}, {hits=}, {misses=}"
-        )
-
+        # Assume no two requests overlap.
         self._reqid += 1
         self._new_qs = 0
-        return takewhile(
+        yield from takewhile(
             self._not_seen_before, self.request_iter(requests.fetch_questions())
+        )
+
+        hits, misses, *_ = self._q_reqid.cache_info()
+        self.logger.debug(
+            f"fetch_new_questions(): {self._reqid=}, {self._new_qs=}, {hits=}, {misses=}"
         )
 
     def _not_seen_before(self, q):

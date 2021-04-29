@@ -3,8 +3,6 @@ import toml
 
 
 class DataManager:
-    MOD_NAME = "data_manager"
-
     def __init__(self, *, config_file=None, db_url=None):
         if not config_file and not db_url:
             raise AssertionError("Data manager: no sources provided")
@@ -14,7 +12,7 @@ class DataManager:
         if db_url:
             self.db = MongoClient(db_url).get_default_database()
 
-    def init_module(self, app, config):
+    def init_module(self, am):
         return self
 
     def get_config(self):

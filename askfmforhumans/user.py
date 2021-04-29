@@ -1,6 +1,5 @@
 from dataclasses import field
 from enum import Enum
-import logging
 
 from askfmforhumans.models import UserProfile
 from askfmforhumans.ui_strings import user_settings_map
@@ -98,10 +97,12 @@ class User:
         api = self.api
         if not api.logged_in:
             if api.access_token:
-                logging.info(f"User {self.uname}: has token, set logged_in = True")
+                self.mgr.logger.info(
+                    f"User {self.uname}: has token, set logged_in = True"
+                )
                 api.logged_in = True
             elif api.auth:
-                logging.info(f"User {self.uname}: has auth, refreshing session")
+                self.mgr.logger.info(f"User {self.uname}: has auth, refreshing session")
                 api.refresh_session()
             else:
                 return False
@@ -121,10 +122,10 @@ class User:
         if self.raw_settings != raw_settings:
             self.raw_settings = raw_settings
             self.settings = settings = UserSettings.from_raw(raw_settings)
-            logging.info(f"User {self.uname}: {settings=} {raw_settings=}")
+            self.mgr.logger.info(f"User {self.uname}: {settings=} {raw_settings=}")
         allowed = self.allowed
         if allowed != old_allowed:
-            logging.info(f"User {self.uname}: {allowed=}")
+            self.mgr.logger.info(f"User {self.uname}: {allowed=}")
 
     def extract_settings(self, bio):
         header = self.mgr.config.settings_header
