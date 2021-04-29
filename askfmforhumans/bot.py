@@ -1,5 +1,6 @@
 from askfmforhumans import ui_strings
 from askfmforhumans.api import requests as r
+from askfmforhumans.app import IntervalJob
 from askfmforhumans.errors import AppError
 from askfmforhumans.util import MyDataclass
 
@@ -18,7 +19,7 @@ class Bot:
         self.logger = am.logger
         self.config = BotConfig.from_dict(am.config)
         self.umgr = am.require_module("user_mgr")
-        am.add_job("tick", self.tick, self.config.tick_interval_sec)
+        am.add_job(IntervalJob("tick", self.tick, self.config.tick_interval_sec))
 
         self.user = self.umgr.get_or_create_user(self.config.username, {})
         self.api = self.user.api

@@ -2,6 +2,7 @@ from dataclasses import field
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.api import requests as r
+from askfmforhumans.app import IntervalJob
 from askfmforhumans.user import User
 from askfmforhumans.util import MyDataclass
 
@@ -40,7 +41,7 @@ class UserManager:
         for uname, model in self.config.users.items():
             self.get_or_create_user(uname, model)
 
-        am.add_job("tick", self.tick, self.config.tick_interval_sec)
+        am.add_job(IntervalJob("tick", self.tick, self.config.tick_interval_sec))
 
     @property
     def active_users(self):

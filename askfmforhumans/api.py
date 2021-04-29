@@ -48,9 +48,7 @@ class ExtendedApi(AskfmApi):
     def request(self, req, **kwargs):
         if not self.dry_mode or req.method == "GET" or req.name == "log_in":
             return super().request(req, **kwargs)
-        self.logger.info(
-            f"Dry mode: ignoring {req.method=} {req.path=} {req.params=}"
-        )
+        self.logger.info(f"Dry mode: ignoring {req.method=} {req.path=} {req.params=}")
         return {}
 
     def fetch_new_questions(self):

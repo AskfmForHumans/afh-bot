@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import field
+import datetime
 import logging
 import sched
 import time
@@ -38,16 +39,57 @@ class AppModule:
     def require_module(self, name):
         return self.app.require_module(name)
 
-    def add_job(self, name, func, interval_sec):
-        name = f"{self.name}.{name}"
-        return self.app.add_job(name, func, interval_sec)
+    def add_job(self, job):
+        job.name = f"{self.name}.{job.name}"
+        self.app.add_job(job)
+
+
+class AppJob:
+    def __init__(self, name, func):
+        self.name = name
+        self.func = func
+
+    def first_time(self):
+        raise NotImplementedError
+
+    def next_time(self):
+        raise NotImplementedError
+
+
+class IntervalJob(AppJob):
+    def __init__(self, name, func, interval_sec):
+        super().__init__(name, func)
+        self.interval_sec = interval_sec
+
+    def first_time(self):
+        return 0  # meaning "run ASAP"
+
+    def next_time(self):
+        return time.time() + self.interval_sec
+
+
+class DailyJob(AppJob):
+    def __init__(self, name, func, utc_time: str):
+        super().__init__(name, func)
+        hour, _, minute = utc_time.partition(":")
+        self.utc_time = datetime.time(int(hour), int(minute))
+
+    def first_time(self):
+        return self.next_time()
+
+    def next_time(self):
+        now = datetime.datetime.utcnow()
+        nt = datetime.datetime.combine(now, self.utc_time)
+        if nt <= now:
+            nt += datetime.timedelta(days=1)
+        return nt.replace(tzinfo=datetime.timezone.utc).timestamp()
 
 
 class App:
     def __init__(self):
         self.modules = {}
         self.jobs = {}
-        self.scheduler = sched.scheduler()
+        self.scheduler = sched.scheduler(timefunc=time.time)
         self.logger = logging.getLogger(f"afh.app")
 
     def use_module(self, module):
@@ -67,11 +109,11 @@ class App:
         mod.start()
         return mod._instance
 
-    def add_job(self, name, func, interval_sec):
-        if name in self.jobs:
-            raise ValueError(f"job name {name!r} is already in use")
-        self.jobs[name] = func, interval_sec
-        self.scheduler.enter(0, 0, self.run_job, (name,))
+    def add_job(self, job):
+        if job.name in self.jobs:
+            raise ValueError(f"job name {job.name!r} is already in use")
+        self.jobs[job.name] = job
+        self.scheduler.enterabs(job.first_time(), 0, self.run_job, (job,))
 
     def init_config(self, config):
         app_cfg = config.get("_app", {})
@@ -88,14 +130,13 @@ class App:
         self.scheduler.run()
         self.logger.warning("No jobs to run. Stopping the app.")
 
-    def run_job(self, name):
-        func, delay = self.jobs[name]
-        self.logger.info(f"starting job {name!r}")
+    def run_job(self, job):
+        self.logger.debug(f"starting job {job.name!r}")
         start = time.monotonic()
         try:
-            func()
+            job.func()
         except (AppError, AskfmApiError):
             self.logger.exception("run_job:")
         delta = time.monotonic() - start
-        self.logger.info(f"finished job in {delta:.2f}s")
-        self.scheduler.enter(delay, 0, self.run_job, (name,))
+        self.logger.debug(f"finished job in {delta:.2f}s")
+        self.scheduler.enterabs(job.next_time(), 0, self.run_job, (job,))
