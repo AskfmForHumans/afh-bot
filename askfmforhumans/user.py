@@ -23,7 +23,6 @@ class FilterSchedule(Enum):
 
 class UserSettings(MyDataclass):
     stop: bool = False
-    test: bool = False
     rescue: bool = True
     delete_after: int = 0
     filters_str: list[str] = field(default_factory=list)
@@ -83,8 +82,6 @@ class User:
         if not self.profile:
             return False
         if cfg.require_hashtag and cfg.hashtag not in self.profile.hashtags:
-            return False
-        if cfg.test_mode and not self.settings.test:
             return False
         if self.settings.stop:
             return False

@@ -13,7 +13,6 @@ class UserManagerConfig(MyDataclass):
     settings_header: str
     require_hashtag: bool = True
     hashtag: str = None
-    test_mode: bool = False
     sync_users: bool = True
     users: dict = field(default_factory=dict)
     tick_interval_sec: int = 30
@@ -23,8 +22,6 @@ class UserManager:
     def __init__(self, am):
         self.logger = am.logger
         self.config = UserManagerConfig.from_dict(am.config)
-        if test_mode := self.config.test_mode:
-            self.logger.warning(f"{test_mode=}")
 
         if self.config.sync_users:
             self.db = am.require_module("data_mgr").db_collection("users")

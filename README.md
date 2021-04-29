@@ -20,9 +20,7 @@ Multifunctional bot intended to mend some of [ASKfm](https://ask.fm)'s screwups.
   - stored in the user's profile bio in the form `key=value` under a configured header
   - the `stop` setting temporarily disables all interaction with the user
   - many other settings that affect filtering behavior
-- special modes for testing
-  - `api_manager.dry_mode`: perform only `GET` requests to the ASKfm API
-  - `user_manager.test_mode`: interact only with users with the `test` setting in profile
+- `api_manager.dry_mode`: perform only `GET` requests to the ASKfm API (useful for testing)
 - l10n: currently only hard-coded Russian
 
 ## Usage
@@ -41,7 +39,6 @@ Here's an example config:
 signing_key = "8648...C417"
 
 [user_mgr]
-test_mode = true
 hashtag = "askfmforhumans"
 settings_header = "=AskfmForHumans="
 
@@ -50,10 +47,12 @@ ask4humans = {password = "12345"}
 
 [user_worker]
 _enabled = true
+_log_level = "DEBUG"
 
 [bot]
 _enabled = true
 username = "ask4humans"
+greet_users = true
 ```
 
 Each section (known in TOML as *table*) defines settings for a different app module. You can find modules and their config schemas in the source files (start with the list of all modules in [\_\_main__.py](askfmforhumans/__main__.py)).
