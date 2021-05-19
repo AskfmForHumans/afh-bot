@@ -11,12 +11,12 @@ from askfmforhumans.api import AskfmApiError
 from askfmforhumans.errors import AppError
 
 
-class AppModule:
+class AppModuleInfo:
     name: str
     config: dict[str, Any]
     logger: logging.Logger
     app: App
-    _impl: Callable[[AppModule], Any]
+    _impl: Callable[[AppModuleInfo], Any]
     _instance: Any
     _active: bool = False
     _enabled: Optional[bool] = None
@@ -35,13 +35,6 @@ class AppModule:
         self.logger = logging.getLogger(f"afh.{self.name}")
         self.logger.setLevel(self.config.get("_log_level", logging.NOTSET))
         self._instance = self._impl(self)
-
-    def require_module(self, name):
-        return self.app.require_module(name)
-
-    def add_job(self, job):
-        job.name = f"{self.name}.{job.name}"
-        self.app.add_job(job)
 
 
 class AppJob:

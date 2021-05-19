@@ -2,7 +2,7 @@ from askfmforhumans import handlers, ui_strings
 from askfmforhumans.api import requests as r
 from askfmforhumans.app import DailyJob, IntervalJob
 from askfmforhumans.models import Question
-from askfmforhumans.util import MyDataclass
+from askfmforhumans.util import MyDataclass, AppModuleBase
 
 # Note: ASKfm threads are complex, so this module ignores them for now
 
@@ -12,19 +12,18 @@ class UserWorkerConfig(MyDataclass):
     daily_job_time_utc: str = "00:00"
 
 
-class UserWorker:
-    def __init__(self, am):
-        self.logger = am.logger
-        self.config = UserWorkerConfig.from_dict(am.config)
-        self.umgr = am.require_module("user_mgr")
+class UserWorker(AppModuleBase):
+    def __init__(self, info):
+        super().__init__(info, config_factory=UserWorkerConfig.from_dict)
+        self.umgr = info.app.require_module("user_mgr")
         self.handlers = [
             handlers.ShoutoutHandler(self),
             handlers.TextFilterHandler(self),
             handlers.StaleFilterHandler(self),
             handlers.RescueHandler(self),
         ]
-        am.add_job(IntervalJob("short", self.short_job, self.config.job_interval_sec))
-        am.add_job(DailyJob("long", self.long_job, self.config.daily_job_time_utc))
+        self.add_job(IntervalJob("short", self.short_job, self.config.job_interval_sec))
+        self.add_job(DailyJob("long", self.long_job, self.config.daily_job_time_utc))
         self.current_job = None
 
     def short_job(self):

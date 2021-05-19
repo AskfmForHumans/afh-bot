@@ -3,6 +3,26 @@ import inspect
 from typing import Any
 
 
+class AppModuleBase:
+    def __init__(self, info, *, config_factory=dict, use_events=True):
+        self.mod_info = info
+        self.logger = info.logger
+        self.config = config_factory(info.config)
+        if use_events:
+            self.event_mgr = info.app.require_module("event_mgr")
+        else:
+            self.event_mgr = None
+
+    def add_job(self, job):
+        job.name = f"{self.mod_info.name}.{job.name}"
+        self.mod_info.app.add_job(job)
+
+    def event(self):
+        if not self.event_mgr:
+            raise NotImplementedError
+        return self.event_mgr.event(self.mod_info.name)
+
+
 class MyDataclass:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
