@@ -3,6 +3,17 @@ import inspect
 from typing import Any
 
 
+class AppModuleBase:
+    def __init__(self, info, *, config_factory=dict):
+        self.mod_info = info
+        self.logger = info.logger
+        self.config = config_factory(info.config)
+
+    def add_job(self, job):
+        job.name = f"{self.mod_info.name}.{job.name}"
+        self.mod_info.app.add_job(job)
+
+
 class MyDataclass:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

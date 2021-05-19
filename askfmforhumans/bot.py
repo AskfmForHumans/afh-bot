@@ -2,7 +2,7 @@ from askfmforhumans import ui_strings
 from askfmforhumans.api import requests as r
 from askfmforhumans.app import IntervalJob
 from askfmforhumans.errors import AppError
-from askfmforhumans.util import MyDataclass
+from askfmforhumans.util import MyDataclass, AppModuleBase
 
 CREATED_BY = "discovery_hashtag"
 
@@ -14,12 +14,11 @@ class BotConfig(MyDataclass):
     tick_interval_sec: int = 30
 
 
-class Bot:
-    def __init__(self, am):
-        self.logger = am.logger
-        self.config = BotConfig.from_dict(am.config)
-        self.umgr = am.require_module("user_mgr")
-        am.add_job(IntervalJob("tick", self.tick, self.config.tick_interval_sec))
+class Bot(AppModuleBase):
+    def __init__(self, info):
+        super().__init__(info, config_factory=BotConfig.from_dict)
+        self.umgr = info.app.require_module("user_mgr")
+        self.add_job(IntervalJob("tick", self.tick, self.config.tick_interval_sec))
 
         self.user = self.umgr.get_or_create_user(self.config.username, {})
         self.api = self.user.api

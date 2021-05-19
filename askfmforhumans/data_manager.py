@@ -12,7 +12,7 @@ class DataManager:
         if db_url:
             self.db = MongoClient(db_url).get_default_database()
 
-    def init_module(self, am):
+    def init_module(self, info):
         return self
 
     def get_config(self):

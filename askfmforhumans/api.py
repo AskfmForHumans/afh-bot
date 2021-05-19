@@ -3,7 +3,7 @@ from itertools import takewhile
 
 from askfm_api import AskfmApi, AskfmApiError, requests
 
-from askfmforhumans.util import MyDataclass
+from askfmforhumans.util import MyDataclass, AppModuleBase
 
 CACHE_SIZE = 32
 
@@ -13,10 +13,9 @@ class ApiManagerConfig(MyDataclass):
     dry_mode: bool = False
 
 
-class ApiManager:
-    def __init__(self, am):
-        self.logger = am.logger
-        self.config = ApiManagerConfig.from_dict(am.config)
+class ApiManager(AppModuleBase):
+    def __init__(self, info):
+        super().__init__(info, config_factory=ApiManagerConfig.from_dict)
         if dry_mode := self.config.dry_mode:
             self.logger.warning(f"{dry_mode=}")
 

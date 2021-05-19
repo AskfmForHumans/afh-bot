@@ -2,7 +2,7 @@ import logging
 import os
 
 from askfmforhumans.api import ApiManager
-from askfmforhumans.app import App, AppModule
+from askfmforhumans.app import App, AppModuleInfo
 from askfmforhumans.bot import Bot
 from askfmforhumans.data_manager import DataManager
 from askfmforhumans.user_manager import UserManager
@@ -15,11 +15,11 @@ dm = DataManager(
 )
 
 app = App()
-app.use_module(AppModule("api_mgr", ApiManager))
-app.use_module(AppModule("bot", Bot))
-app.use_module(AppModule("data_mgr", dm.init_module))
-app.use_module(AppModule("user_mgr", UserManager))
-app.use_module(AppModule("user_worker", UserWorker))
+app.use_module(AppModuleInfo("api_mgr", ApiManager))
+app.use_module(AppModuleInfo("bot", Bot))
+app.use_module(AppModuleInfo("data_mgr", dm.init_module))
+app.use_module(AppModuleInfo("user_mgr", UserManager))
+app.use_module(AppModuleInfo("user_worker", UserWorker))
 
 app.init_config(dm.get_config())
 app.init_modules()

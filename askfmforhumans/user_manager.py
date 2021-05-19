@@ -4,7 +4,7 @@ from askfmforhumans.api import ExtendedApi
 from askfmforhumans.api import requests as r
 from askfmforhumans.app import IntervalJob
 from askfmforhumans.user import User
-from askfmforhumans.util import MyDataclass
+from askfmforhumans.util import MyDataclass, AppModuleBase
 
 DEFAULT_CREATED_BY = "app"
 
@@ -18,27 +18,26 @@ class UserManagerConfig(MyDataclass):
     tick_interval_sec: int = 30
 
 
-class UserManager:
-    def __init__(self, am):
-        self.logger = am.logger
-        self.config = UserManagerConfig.from_dict(am.config)
+class UserManager(AppModuleBase):
+    def __init__(self, info):
+        super().__init__(info, config_factory=UserManagerConfig.from_dict)
 
         if self.config.sync_users:
-            self.db = am.require_module("data_mgr").db_collection("users")
+            self.db = info.app.require_module("data_mgr").db_collection("users")
             if not self.db:
                 raise AssertionError("User manager: no DB connection, can't sync")
 
         if self.config.require_hashtag and not self.config.hashtag:
             raise AssertionError("User manager: no hashtag provided")
 
-        self.api_manager = am.require_module("api_mgr")
+        self.api_manager = info.app.require_module("api_mgr")
         self.users = {}
         self._old_models = {}
 
         for uname, model in self.config.users.items():
             self.get_or_create_user(uname, model)
 
-        am.add_job(IntervalJob("tick", self.tick, self.config.tick_interval_sec))
+        self.add_job(IntervalJob("tick", self.tick, self.config.tick_interval_sec))
 
     @property
     def active_users(self):
