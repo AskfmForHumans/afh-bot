@@ -37,7 +37,9 @@ class ShoutoutHandler(Handler):
         self.worker.logger.info(
             f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {q.body=}"
         )
-        self.worker.delete_question(user, q, block=user.settings.filter_block_authors)
+        block = user.settings.filter_block_authors
+        self.worker.delete_question( user, q, block=block)
+        self.worker.event().user(user).delete(q, block=block).done()
         return True
 
 
@@ -65,9 +67,9 @@ class TextFilterHandler(Handler):
             self.worker.logger.info(
                 f"Got {q.type}:{q.id} for {user.uname}: {q.author=} {matched_filter=}"
             )
-            self.worker.delete_question(
-                user, q, block=user.settings.filter_block_authors
-            )
+            block = user.settings.filter_block_authors
+            self.worker.delete_question( user, q, block=block)
+            self.worker.event().user(user).delete(q, block=block).done()
             return True
         return False
 
@@ -82,10 +84,8 @@ class StaleFilterHandler(Handler):
         threshold = user.settings.delete_after
         if time.time() - q.updated_at > threshold * SEC_IN_DAY:
             ts = time.asctime(time.gmtime(q.updated_at))
-            self.worker.logger.info(
-                f"Got {q.type}:{q.id} for {user.uname}: {ts=} {threshold=}"
-            )
             self.worker.delete_question(user, q)
+            self.worker.event().user(user).filter(ts=ts, threshold=threshold).delete(q, block=False).done()
             return True
         return False
 
@@ -99,7 +99,7 @@ class RescueHandler(Handler):
             return False
         if time.time() - q.updated_at > SEC_IN_YEAR:
             ts = time.asctime(time.gmtime(q.updated_at))
-            self.worker.logger.info(f"Got {q.type}:{q.id} for {user.uname}: {ts=}")
             self.worker.rescue_question(user, q)
+            self.worker.event().user(user).rescue(q).done()
             return True
         return False

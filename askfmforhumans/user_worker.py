@@ -32,6 +32,7 @@ class UserWorker(AppModuleBase):
             self.run_handlers(user)
             if user.settings.read_shoutouts:
                 user.api.request(r.mark_notifs_as_read("SHOUTOUT"))
+                self.event().user(user).mark("SHOUTOUT").done()
 
     def long_job(self):
         self.current_job = "long"
@@ -56,13 +57,10 @@ class UserWorker(AppModuleBase):
 
     def delete_question(self, user, q, *, block=False):
         if block:
-            self.logger.info(f"Deleting {q.id} and blocking {q.author}")
             user.api.request(r.report_question(q.id, should_block=True))
         else:
-            self.logger.info(f"Deleting {q.id}")
             user.api.request(r.delete_question(q.type, q.id))
 
     def rescue_question(self, user, q):
-        self.logger.info(f"Rescuing {q.id}")
         user.api.request(r.post_answer(q.type, q.id, ui_strings.rescuing_answer))
         user.api.request(r.delete_answer(q.id))
