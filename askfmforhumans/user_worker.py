@@ -47,6 +47,7 @@ class UserWorker(AppModuleBase):
             qs = user.api.fetch_new_questions()
         else:
             qs = user.api.request_iter(r.fetch_questions())
+            qs = reversed(list(qs))  # rescue questions in the right order
 
         for q in qs:
             q = Question.from_api_obj(q)

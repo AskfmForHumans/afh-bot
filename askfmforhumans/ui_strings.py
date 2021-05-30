@@ -20,7 +20,7 @@ user_settings_map = {
     "стоп_машина": "stop",
     "спасать_старые_вопросы": "rescue",
     #
-    "удалять_вопросы_старше_N_дней": "delete_after",
+    "удалять_вопросы_старше_n_дней": "delete_after",
     "фильтр": "filters_str",
     "фильтр_рв": "filters_re",
     "читать_шаутауты": "read_shoutouts",
