@@ -28,7 +28,7 @@ class UserSettings(MyDataclass):
     filters_str: list[str] = field(default_factory=list)
     filters_re: list[str] = field(default_factory=list)
     read_shoutouts: bool = True
-    delete_shoutouts: bool = True
+    filter_shoutouts: bool = True
     filter_block_authors: bool = False
     filter_anon_only: bool = False
     filter_schedule: FilterSchedule = FilterSchedule.DAILY

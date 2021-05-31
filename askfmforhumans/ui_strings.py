@@ -16,20 +16,20 @@ login_failed = """\
 user_settings_map = {
     "да": True,
     "нет": False,
-    #
-    "стоп_машина": "stop",
-    "спасать_старые_вопросы": "rescue",
-    #
-    "удалять_вопросы_старше_n_дней": "delete_after",
-    "фильтр": "filters_str",
-    "фильтр_рв": "filters_re",
+    # misc
     "читать_шаутауты": "read_shoutouts",
-    "удалять_шаутауты": "delete_shoutouts",
-    #
+    "спасать_старые_вопросы": "rescue",
+    "удалять_вопросы_старше_n_дней": "delete_after",
+    "стоп_машина": "stop",
+    # filters
+    "фильтр_шаутауты": "filter_shoutouts",
+    "фильтр_текст": "filters_str",
+    "фильтр_регвыр": "filters_re",
+    # filter modifiers
     "фильтр_блок_авторов": "filter_block_authors",
     "фильтр_только_анон": "filter_anon_only",
-    #
-    "режим_чистки": "filter_schedule",
+    "фильтр_режим": "filter_schedule",
+    # schedule values
     "непрерывно": "CONTINUOUS",
     "ежедневно": "DAILY",
     "по_запросу": "ON_DEMAND",

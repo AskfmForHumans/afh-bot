@@ -28,7 +28,7 @@ class Handler:
 
 class ShoutoutHandler(Handler):
     def enabled_for(self, user):
-        return user.settings.delete_shoutouts and self.job_matches_schedule(user)
+        return user.settings.filter_shoutouts and self.job_matches_schedule(user)
 
     def handle_question(self, user, q):
         if not q.is_shoutout or (not q.is_anon and user.settings.filter_anon_only):
