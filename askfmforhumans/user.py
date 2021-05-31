@@ -3,7 +3,7 @@ from enum import Enum
 
 from askfmforhumans.models import UserProfile
 from askfmforhumans.ui_strings import user_settings_map
-from askfmforhumans.util import MyDataclass
+from askfmforhumans.util import MyDataclass, extract_directive
 
 
 class UserModel(MyDataclass):
@@ -13,6 +13,10 @@ class UserModel(MyDataclass):
     device_id: str = None
     access_token: str = None
     password: str = None
+
+    @property
+    def auth(self):
+        return (self.uname, self.password) if self.password else None
 
 
 class FilterSchedule(Enum):
@@ -109,7 +113,7 @@ class User:
         model = self.model = UserModel.from_dict(model)
         api = self.api
         api.device_id = model.device_id or api.device_id
-        api.auth = (self.uname, model.password) if model.password else None
+        api.auth = model.auth
         api.access_token = model.access_token or api.access_token
 
     def set_profile(self, profile):

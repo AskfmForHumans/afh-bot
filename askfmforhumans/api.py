@@ -3,7 +3,7 @@ from itertools import takewhile
 
 from askfm_api import AskfmApi, AskfmApiError, requests
 
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.util import AppModuleBase, MyDataclass
 
 CACHE_SIZE = 32
 

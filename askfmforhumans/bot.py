@@ -2,7 +2,7 @@ from askfmforhumans import ui_strings
 from askfmforhumans.api import requests as r
 from askfmforhumans.app import IntervalJob
 from askfmforhumans.errors import AppError
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.util import AppModuleBase, MyDataclass
 
 CREATED_BY = "discovery_hashtag"
 

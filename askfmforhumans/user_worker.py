@@ -1,8 +1,10 @@
+import time
+
 from askfmforhumans import handlers, ui_strings
 from askfmforhumans.api import requests as r
 from askfmforhumans.app import DailyJob, IntervalJob
 from askfmforhumans.models import Question
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.util import AppModuleBase, MyDataclass
 
 # Note: ASKfm threads are complex, so this module ignores them for now
 
@@ -10,6 +12,7 @@ from askfmforhumans.util import MyDataclass, AppModuleBase
 class UserWorkerConfig(MyDataclass):
     job_interval_sec: int = 30
     daily_job_time_utc: str = "00:00"
+    check_answers_window_sec: int = 60 * 5
 
 
 class UserWorker(AppModuleBase):
@@ -32,6 +35,7 @@ class UserWorker(AppModuleBase):
             self.run_handlers(user)
             if user.settings.read_shoutouts:
                 user.api.request(r.mark_notifs_as_read("SHOUTOUT"))
+            # self.check_answers(user)
 
     def long_job(self):
         self.current_job = "long"
@@ -54,6 +58,12 @@ class UserWorker(AppModuleBase):
             for h in handlers:
                 if h.handle_question(user, q):
                     break
+
+    def check_answers(self, user):
+        for q in user.api.request(r.fetch_answers(user.uname)):
+            a = q.answer
+            if a.created_at + self.config.check_answers_window_sec < time.time():
+                break
 
     def delete_question(self, user, q, *, block=False):
         if block:

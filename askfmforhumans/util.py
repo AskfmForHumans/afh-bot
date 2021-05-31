@@ -1,6 +1,9 @@
 import dataclasses
 import inspect
+import re
 from typing import Any
+
+from askfmforhumans.ui_strings import directives_map
 
 
 class AppModuleBase:
@@ -59,3 +62,8 @@ class MyDataclass:
 
     def as_dict(self):
         return dataclasses.asdict(self)
+
+    
+def extract_directive(text, dir_name):
+    r"^\s*#AFH:\s*(\w+)\s*$"
+    re.split(regex, text)

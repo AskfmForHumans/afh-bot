@@ -17,6 +17,24 @@ class UserProfile(MyDataclass):
         )
 
 
+class Answer(MyDataclass):
+    type: str
+    author: str
+    author_name: str
+    body: str
+    created_at: int
+
+    @classmethod
+    def from_api_obj(cls, obj):
+        return cls(
+            type=obj["type"],
+            author=obj["author"],
+            author_name=obj["authorName"],
+            body=obj["body"],
+            created_at=obj["createdAt"],
+        )
+
+
 class Question(MyDataclass):
     id: int
     type: str
@@ -24,6 +42,7 @@ class Question(MyDataclass):
     body: str
     created_at: int
     updated_at: int
+    answer: Optional[Answer]
 
     @property
     def is_regular(self):
@@ -32,7 +51,7 @@ class Question(MyDataclass):
 
     @property
     def is_anon(self):
-        # I suspect questions from a disabled account will be anon in this sense,
+        # I suspect questions from a disabled account will not be anon in this sense,
         # but won't have an author (didn't check). Be aware.
         return self.type in ("anonymous", "anonshoutout")
 
@@ -42,6 +61,9 @@ class Question(MyDataclass):
 
     @classmethod
     def from_api_obj(cls, obj):
+        ans = obj.get("answer")
+        if ans:
+            ans = Answer.from_api_obj(ans)
         return cls(
             id=obj["qid"],
             type=obj["type"],
@@ -49,4 +71,5 @@ class Question(MyDataclass):
             body=obj["body"],
             created_at=obj["createdAt"],
             updated_at=obj["updatedAt"],
+            answer=ans,
         )

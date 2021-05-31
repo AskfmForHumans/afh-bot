@@ -4,7 +4,7 @@ from askfmforhumans.api import ExtendedApi
 from askfmforhumans.api import requests as r
 from askfmforhumans.app import IntervalJob
 from askfmforhumans.user import User
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.util import AppModuleBase, MyDataclass
 
 DEFAULT_CREATED_BY = "app"
 
@@ -85,19 +85,17 @@ class UserManager(AppModuleBase):
 
         # remote -> local sync
         upd_remote = {k: v for k, v in remote_model.items() if old_model.get(k) != v}
-        new_model = remote_model | user.model.as_dict() | upd_remote
-        self._old_models[uname] = new_model
-        user.set_model(new_model)
+        if upd_remote:
+            new_model = remote_model | user.model.as_dict() | upd_remote
+            self._old_models[uname] = new_model
+            user.set_model(new_model)
+            self.logger.debug(f"User {uname}: {upd_remote=}")
 
         # local -> remote sync
         upd_local = {k: v for k, v in new_model.items() if remote_model.get(k) != v}
         if upd_local:
-            query = {"uname": uname}
-            update = {"$set": upd_local, "$setOnInsert": query}
-            self.db.update_one(query, update, upsert=True)
-
-        if upd_remote or upd_local:
-            self.logger.info(f"User sync: {uname=} {upd_remote=} {upd_local=}")
+            self.db.update_one({"uname": uname}, {"$set": upd_local}, upsert=True)
+            self.logger.info(f"User {uname}: {upd_local=}")
 
     def update_user(self, user):
         if not user.model.ignored:
