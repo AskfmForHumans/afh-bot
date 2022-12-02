@@ -1,9 +1,10 @@
-from functools import cached_property, lru_cache
+from functools import cached_property
 from itertools import takewhile
 
 from askfm_api import AskfmApi, AskfmApiError, requests
 
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.app import AppModuleBase
+from askfmforhumans.util import LRUCache, MyDataclass
 
 CACHE_SIZE = 32
 
@@ -39,10 +40,8 @@ class ExtendedApi(AskfmApi):
         self.dry_mode = dry_mode
         super().__init__(*args, **kwargs)
 
-        self._reqid = 0
         self._new_qs = 0
-        # Returns id of the request when the given question was added to the cache.
-        self._q_reqid = lru_cache(maxsize=CACHE_SIZE)(lambda qid, qts: self._reqid)
+        self.cache = LRUCache(CACHE_SIZE)
 
     def request(self, req, **kwargs):
         if not self.dry_mode or req.method == "GET" or req.name == "log_in":
@@ -55,29 +54,29 @@ class ExtendedApi(AskfmApi):
 
         It counts as seen only questions retrieved in previous invocations of this method.
         The daily question is always included (if it exists).
-        The cache is bounded, thus it may "forget" seen questions in rare occasions.
+        The cache is bounded, thus it may not function properly
+        when a lot of questions have been deleted.
         """
-        # Assume no two requests overlap.
-        self._reqid += 1
-        self._new_qs = 0
-        yield from takewhile(
-            self._not_seen_before, self.request_iter(requests.fetch_questions())
-        )
+        new_qs = 0
+        for q in self.request_iter(requests.fetch_questions()):
+            if q["type"] != "daily":
+                is_new = True
+            elif new_qs >= CACHE_SIZE:
+                # The cache is already filled with new questions
+                # so there's no use to look at it.
+                is_new = True
+            else:
+                # We need to consider `updatedAt` because when it changes
+                # the question changes its position in the list.
+                q_info = (q["qid"], q["updatedAt"])
+                # Returns True if q is already in the cache.
+                is_new = not self.cache.check_and_store(q_info)
 
-        hits, misses, *_ = self._q_reqid.cache_info()
-        self.logger.debug(
-            f"fetch_new_questions(): {self._reqid=}, {self._new_qs=}, {hits=}, {misses=}"
-        )
+            if is_new:
+                new_qs += 1
+                yield q
+            else:
+                break
 
-    def _not_seen_before(self, q):
-        if q["type"] == "daily":
-            return True
-
-        if (
-            self._new_qs >= CACHE_SIZE  # the cache is already filled with new questions
-            or self._q_reqid(q["qid"], q["updatedAt"]) == self._reqid
-        ):
-            self._new_qs += 1
-            return True
-
-        return False
+        hits, misses, *_ = self.cache.cache_info()
+        self.logger.debug(f"fetch_new_questions(): {new_qs=}, {hits=}, {misses=}")

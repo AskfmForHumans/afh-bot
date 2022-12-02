@@ -2,9 +2,9 @@ from dataclasses import field
 
 from askfmforhumans.api import ExtendedApi
 from askfmforhumans.api import requests as r
-from askfmforhumans.app import IntervalJob
+from askfmforhumans.app import AppModuleBase, IntervalJob
 from askfmforhumans.user import User
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.util import MyDataclass
 
 DEFAULT_CREATED_BY = "app"
 
@@ -24,7 +24,7 @@ class UserManager(AppModuleBase):
 
         if self.config.sync_users:
             self.db = info.app.require_module("data_mgr").db_collection("users")
-            if not self.db:
+            if self.db is None:
                 raise AssertionError("User manager: no DB connection, can't sync")
 
         if self.config.require_hashtag and not self.config.hashtag:

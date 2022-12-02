@@ -1,8 +1,8 @@
 from askfmforhumans import handlers, ui_strings
 from askfmforhumans.api import requests as r
-from askfmforhumans.app import DailyJob, IntervalJob
+from askfmforhumans.app import AppModuleBase, DailyJob, IntervalJob
 from askfmforhumans.models import Question
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.util import MyDataclass
 
 # Note: ASKfm threads are complex, so this module ignores them for now
 

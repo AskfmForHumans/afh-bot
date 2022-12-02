@@ -1,8 +1,8 @@
 from askfmforhumans import ui_strings
 from askfmforhumans.api import requests as r
-from askfmforhumans.app import IntervalJob
+from askfmforhumans.app import AppModuleBase, IntervalJob
 from askfmforhumans.errors import AppError
-from askfmforhumans.util import MyDataclass, AppModuleBase
+from askfmforhumans.util import MyDataclass
 
 CREATED_BY = "discovery_hashtag"
 

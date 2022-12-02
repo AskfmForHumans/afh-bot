@@ -21,11 +21,11 @@ class DataManager:
         return self.db_singleton("config")
 
     def db_collection(self, name):
-        if self.db:
+        if self.db is not None:
             return self.db.get_collection(name)
         return None
 
     def db_singleton(self, name):
-        if self.db:
+        if self.db is not None:
             return self.db_collection("singletons").find_one({"_id": name})
         return None

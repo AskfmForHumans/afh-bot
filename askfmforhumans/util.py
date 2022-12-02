@@ -1,17 +1,7 @@
 import dataclasses
+from functools import lru_cache
 import inspect
-from typing import Any
-
-
-class AppModuleBase:
-    def __init__(self, info, *, config_factory=dict):
-        self.mod_info = info
-        self.logger = info.logger
-        self.config = config_factory(info.config)
-
-    def add_job(self, job):
-        job.name = f"{self.mod_info.name}.{job.name}"
-        self.mod_info.app.add_job(job)
+from typing import Any, Optional
 
 
 class MyDataclass:
@@ -59,3 +49,19 @@ class MyDataclass:
 
     def as_dict(self):
         return dataclasses.asdict(self)
+
+
+class LRUCache:
+    def __init__(self, max_size: Optional[int] = None):
+        self._cookie = 0
+        self.cache = lru_cache(max_size)(self._get_cookie)
+
+    def _get_cookie(self, val):
+        return self._cookie
+
+    def check_and_store(self, val):
+        """Returns True if `val` is already in the cache.
+        Otherwise, puts it into the cache and returns False.
+        """
+        self._cookie += 1
+        return self._cache(val) < self._cookie

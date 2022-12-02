@@ -11,6 +11,17 @@ from askfmforhumans.api import AskfmApiError
 from askfmforhumans.errors import AppError
 
 
+class AppModuleBase:
+    def __init__(self, info, *, config_factory=dict):
+        self.mod_info = info
+        self.logger = info.logger
+        self.config = config_factory(info.config)
+
+    def add_job(self, job):
+        job.name = f"{self.mod_info.name}.{job.name}"
+        self.mod_info.app.add_job(job)
+
+
 class AppModuleInfo:
     name: str
     config: dict[str, Any]
@@ -64,18 +75,26 @@ class IntervalJob(AppJob):
 class DailyJob(AppJob):
     def __init__(self, name, func, utc_time: str):
         super().__init__(name, func)
-        hour, _, minute = utc_time.partition(":")
-        self.utc_time = datetime.time(int(hour), int(minute))
+        self.utc_time = utc_time
+        if utc_time != "now":
+            hour, _, minute = utc_time.partition(":")
+            self.utc_time = datetime.time(
+                int(hour), int(minute), tzinfo=datetime.timezone.utc
+            )
 
     def first_time(self):
         return self.next_time()
 
     def next_time(self):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        if self.utc_time == "now":
+            self.utc_time = now.timetz()
+
         nt = datetime.datetime.combine(now, self.utc_time)
-        if nt <= now:
+        if nt < now:
             nt += datetime.timedelta(days=1)
-        return nt.replace(tzinfo=datetime.timezone.utc).timestamp()
+        return nt.timestamp()
 
 
 class App:
