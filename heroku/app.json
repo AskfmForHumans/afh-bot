@@ -1,0 +1,17 @@
+{
+    "name": "afh-bot",
+    "description": "Automatic handling of ASKfm questions with flexible per-user settings",
+    "repository": "https://github.com/AskfmForHumans/afh-bot",
+    "env": {
+        "AFH_DB_URL": {
+            "description": "MongoDB URL, see README for more information",
+            "value": "mongodb://user:pass@example.com/db-name",
+            "required": true
+        }
+    },
+    "formation": {
+        "worker": {
+            "quantity": 1
+        }
+    }
+}

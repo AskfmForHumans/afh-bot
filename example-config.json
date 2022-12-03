@@ -1,0 +1,29 @@
+{
+    "_id": "config",
+    "_app": {
+        "_log_level": "DEBUG"
+    },
+    "api_mgr": {
+        "signing_key": "8648...C417"
+    },
+    "user_mgr": {
+        "hashtag": "askfmforhumans",
+        "require_hashtag": true,
+        "settings_header": "=AskfmForHumans=",
+        "users": {
+            "ask4humans": {
+                "password": "12345"
+            }
+        }
+    },
+    "user_worker": {
+        "_log_level": "DEBUG",
+        "_enabled": true
+    },
+    "bot": {
+        "_enabled": true,
+        "username": "ask4humans",
+        "search_by_hashtag": true,
+        "greet_users": true
+    }
+}

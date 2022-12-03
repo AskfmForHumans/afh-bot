@@ -25,7 +25,7 @@ class UserManager(AppModuleBase):
         if self.config.sync_users:
             self.db = info.app.require_module("data_mgr").db_collection("users")
             if self.db is None:
-                raise AssertionError("User manager: no DB connection, can't sync")
+                self.config.sync_users = False
 
         if self.config.require_hashtag and not self.config.hashtag:
             raise AssertionError("User manager: no hashtag provided")
