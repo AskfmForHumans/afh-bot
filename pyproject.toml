@@ -1,0 +1,28 @@
+[project]
+license = {text = "MIT"}
+urls.homepage = "https://github.com/AskfmForHumans/afh-bot"
+dependencies = [
+    "askfm-api~=0.2",
+    "pymongo~=4.3",
+    "toml~=0.10",
+]
+requires-python = ">=3.9"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "black~=22.10",
+    "isort~=5.10",
+]
+
+[tool.pdm.scripts]
+_.env_file = ".env"
+start = "python -m askfmforhumans"
+
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
+
+[tool.isort]
+profile = "black"
+force_sort_within_sections = true
+skip_gitignore = true
