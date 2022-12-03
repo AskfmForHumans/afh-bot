@@ -1,0 +1,6 @@
+{
+    "python.autoComplete.extraPaths": [
+        "__pypackages__/3.9/lib"
+    ],
+    "python.formatting.provider": "black"
+}

@@ -1,0 +1,19 @@
+[api_mgr]
+# You need to obtain a signing key to use this app!
+signing_key = "???"
+
+[user_mgr]
+hashtag = "askfmforhumans"
+settings_header = "=AskfmForHumans="
+
+[user_mgr.users]
+ask4humans = {password = "12345"}
+
+[user_worker]
+_enabled = true
+_log_level = "DEBUG"
+
+[bot]
+_enabled = true
+username = "ask4humans"
+greet_users = true

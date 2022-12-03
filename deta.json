@@ -1,0 +1,14 @@
+{
+    "name": "afh-bot",
+    "description": "Automatic handling of ASKfm questions with flexible per-user settings", 
+    "runtime": "python3.9",
+    "cron": "1 minute",
+    "env": [
+        {
+            "key": "AFH_DB_URL",
+            "description": "MongoDB URL, see README for more information",
+            "value": "mongodb://user:pass@example.com/db-name",
+            "required": true
+        }
+    ]
+}
